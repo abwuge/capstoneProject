@@ -1,25 +1,23 @@
 #include "Particle.h"
 
-Particle::Particle(double charge, double mass, TVector3 momentum, TVector3 position)
+Particle::Particle(const double charge, const double mass0, const TVector3 &momentum, const Detector &detector)
 {
     this->charge = charge;
-    this->mass = mass;
+    this->mass0 = mass0;
     this->momentum = momentum;
-    this->position = position;
+    this->position = TVector3(0, 0, detector.getMinZ());
 }
 
-Particle::~Particle()
-{
-}
+Particle::~Particle() {}
 
 double Particle::getCharge() const
 {
     return this->charge;
 }
 
-double Particle::getMass() const
+double Particle::getMass0() const
 {
-    return this->mass;
+    return this->mass0;
 }
 
 TVector3 Particle::getMomentum() const
