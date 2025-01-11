@@ -1,0 +1,25 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++ 生成项目文件",
+            "command": "/usr/bin/bash",
+            "args": [
+                "-c",
+                "/usr/bin/g++ -fdiagnostics-color=always $(root-config --cflags) -I${workspaceFolder}/include -g -o ${workspaceFolder}/bin/output ${workspaceFolder}/src/*.cpp $(root-config --libs) -lvdt"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "调试器生成的任务。"
+        }
+    ],
+    "version": "2.0.0"
+}

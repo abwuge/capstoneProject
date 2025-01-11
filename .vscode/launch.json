@@ -1,0 +1,34 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "C/C++: g++ 运行项目",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/output",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "C/C++: g++ 生成项目文件",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "logging": {
+                "trace": true,
+                "engineLogging": true,
+                "traceResponse": true
+            },
+            "sourceFileMap": {
+                "./csu/..": "/usr/src/glibc/glibc-2.39/"
+            }
+        }
+    ]
+}
