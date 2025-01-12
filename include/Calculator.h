@@ -8,9 +8,14 @@
 
 namespace Calculator
 {
-    // Calculate the hit positions of the particle in the scintillator counters
-    std::vector<TVector3> getHitPositions(const Particle &particle, const TVector3 &B, const std::vector<double> &scintillatorCountersLocation);
+    // Calculate the cyclotron radius of the particle in the magnetic field
+    double getCyclotronRadius(const Particle &particle, const Detector &detector);
 
+    // Calculate the derection of the cyclotron radius
+    TVector3 getCyclotronDirection(const Particle &particle, const Detector &detector);
+
+    // Calculate the hit positions of the particle in the scintillator counters
+    std::vector<TVector3> getHitPositions(const Particle &particle, const Detector &detector);
 }
 
 #endif /* CALCULATOR_H */
