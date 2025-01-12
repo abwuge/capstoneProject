@@ -3,7 +3,7 @@
 
 double c = TMath::C();
 
-std::vector<TVector3> Calculator::getHitPositions(const Particle& particle, const TVector3& B, const std::vector<double>& scintillatorCountersLocation)
+std::vector<TVector3> Calculator::getHitPositions(const Particle &particle, const TVector3 &B, const std::vector<double> &scintillatorCountersLocation)
 {
     std::vector<TVector3> hitPositions;
 

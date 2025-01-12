@@ -1,11 +1,11 @@
 // Coordinate system definition
 /*******************************
-*           ·------- x         *
-*          /|                  *
-*         / |                  *
-*        y  |                  *
-*           z                  *
-*******************************/
+ *           ·------- x         *
+ *          /|                  *
+ *         / |                  *
+ *        y  |                  *
+ *           z                  *
+ *******************************/
 
 #ifndef DETECTOR_H
 #define DETECTOR_H
@@ -13,21 +13,30 @@
 #include <vector>
 #include <TVector3.h>
 
+#include "ScintillatorCounters.h"
+
 class Detector
 {
 private:
-    std::vector<double> scintillatorCountersLocation; // z-coordinates of the scintillator counters in cm (assuming they are infinite planes in the x and y directions)
-    TVector3 B;                                       // Magnetic field
+    std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
+    TVector3 B;                                             // Magnetic field
 
 public:
-    // Constructor & Destructor
-    Detector(const std::vector<double> &scintillatorCountersLocation, const TVector3 &B);
+    /* BEGIN Constructor & Destructor */
+    Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B);
     ~Detector();
+    /* END Constructor & Destructor */
 
-    // Getters
-    double getMinZ() const;                                      // Minimum z-coordinate of the scintillator counters in cm
-    std::vector<double> getScintillatorCountersLocation() const; // z-coordinates of the scintillator counters in cm (assuming they are infinite planes in the x and y directions)
-    TVector3 getB() const;                                       // Magnetic field
+    /* BEGIN Getters */
+    // returns the minimum z-coordinate of the scintillator counters in cm
+    double getMinZ() const;
+
+    // returns the scintillator counters
+    std::vector<ScintillatorCounters> getScintillatorCounters() const;
+
+    // returns the magnetic field
+    TVector3 getB() const;
+    /* END Getters */
 };
 
 #endif /* DETECTOR_H */
