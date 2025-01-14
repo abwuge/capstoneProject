@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/snap/root-framework/current/usr/local/include/**"
+                "/snap/root-framework/current/usr/local/include/**",
+                "/usr/local/include/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

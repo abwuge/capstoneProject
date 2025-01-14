@@ -1,4 +1,4 @@
-NAME := test
+NAME := bin/output
 
 SRC_DIR := src
 INC_DIR := include

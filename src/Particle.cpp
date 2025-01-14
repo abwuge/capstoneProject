@@ -1,4 +1,5 @@
 #include "Particle.h"
+
 #include <TMath.h>
 
 Particle::Particle(const double charge, const double mass0, const TVector3 &momentum, const TVector3 &position)
@@ -6,9 +7,32 @@ Particle::Particle(const double charge, const double mass0, const TVector3 &mome
 {
     energy = TMath::Sqrt(momentum.Mag2() + mass0 * mass0);
     gamma = energy / mass0;
-    mass = mass0 * gamma;
+    mass = gamma * mass0;
     velocity = momentum * (1. / energy);
     beta = velocity.Mag();
+}
+
+Particle::Particle(const double charge, const double mass0, double beta, const TVector3 &position, const TVector3 &direction)
+    : charge(charge), mass0(mass0), position(position)
+{
+    if (beta < 0)
+    {
+        printf("Beta cannot be negative, setting beta to 0!\n");
+        beta = 0;
+    }
+
+    if (beta >= 1)
+    {
+        printf("Beta must be less than 1, setting beta to 0.9999999999999999!\n");
+        beta = 0.9999999999999999;
+    }
+
+    this->beta = beta;
+    energy = mass0 / TMath::Sqrt(1 - beta * beta);
+    gamma = energy / mass0;
+    mass = gamma * mass0;
+    velocity = beta * direction;
+    momentum = mass * velocity;
 }
 
 Particle::~Particle() {}
@@ -23,14 +47,9 @@ double Particle::getMass0() const
     return mass0;
 }
 
-TVector3 Particle::getMomentum() const
+double Particle::getMass() const
 {
-    return momentum;
-}
-
-TVector3 Particle::getPosition() const
-{
-    return position;
+    return mass;
 }
 
 double Particle::getEnergy() const
@@ -43,9 +62,19 @@ double Particle::getGamma() const
     return gamma;
 }
 
-double Particle::getMass() const
+double Particle::getBeta() const
 {
-    return mass;
+    return beta;
+}
+
+TVector3 Particle::getPosition() const
+{
+    return position;
+}
+
+TVector3 Particle::getMomentum() const
+{
+    return momentum;
 }
 
 TVector3 Particle::getVelocity() const
@@ -53,9 +82,52 @@ TVector3 Particle::getVelocity() const
     return velocity;
 }
 
-double Particle::getBeta() const
+bool Particle::setBeta(const double beta)
 {
-    return beta;
+    if (beta < 0 || beta >= 1)
+    {
+        printf("Beta must be between 0 and 1!\n");
+        return false;
+    }
+
+    this->beta = beta;
+    energy = mass0 / TMath::Sqrt(1 - beta * beta);
+    gamma = energy / mass0;
+    mass = gamma * mass0;
+    velocity = beta * velocity.Unit();
+    momentum = mass * velocity;
+
+    return true;
+}
+
+bool Particle::setMomentum(const TVector3 &momentum)
+{
+    this->momentum = momentum;
+    energy = TMath::Sqrt(momentum.Mag2() + mass0 * mass0);
+    gamma = energy / mass0;
+    mass = gamma * mass0;
+    velocity = momentum * (1. / energy);
+    beta = velocity.Mag();
+
+    return true;
+}
+
+bool Particle::setBetaGamma(const double betaGamma)
+{
+    if (betaGamma < 0)
+    {
+        printf("Beta * gamma cannot be negative!\n");
+        return false;
+    }
+
+    beta = betaGamma / TMath::Sqrt(1 + betaGamma * betaGamma);
+    gamma = betaGamma / beta;
+    energy = gamma * mass0;
+    mass = gamma * mass0;
+    velocity = beta * velocity.Unit();
+    momentum = mass * velocity;
+
+    return true;
 }
 
 double Particle::Wmax() const

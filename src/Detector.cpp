@@ -34,9 +34,6 @@ double Detector::particleCyclotronRadius(const Particle &particle) const
     double absCharge = std::abs(particle.getCharge());
     const TVector3 &momentum = particle.getMomentum();
 
-    if (B.Mag() < 1e-100)
-        return 1e100;
-
     double radius = momentum.Perp(B) / (absCharge * B.Mag());   // cyclotron radius in MeV / c / (e * T) = 1e6 J / (c * T)
     constexpr double conversionFactor = 1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
     return radius * conversionFactor;

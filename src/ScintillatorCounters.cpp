@@ -27,5 +27,5 @@ Material ScintillatorCounters::getMaterial() const
 
 double ScintillatorCounters::energyLoss(const Particle &particle) const
 {
-    return material.meanRateOfEnergyLoss(particle) * thickness;
+    return material.linearStoppingPower(particle) * thickness;
 }

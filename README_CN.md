@@ -9,3 +9,8 @@
 ## 摘要
 
 阿尔法磁谱仪（AMS）是在国际空间站上运行的粒子物理实验。AMS的飞行时间探测器（TOF）是测量带电粒子飞行方向和速度的探测器。由于带电粒子在TOF的材料中发生电离能量损失，而导致粒子减速。若使用线性函数拟合粒子的时间-空间关系，则会导致粒子速度重建存在一定的偏差，在低能时更加明显。本研究拟在粒子速度拟合过程中引入粒子能量损失项，进行非线性拟合，以减少速度重建的偏差和改善精度，为AMS鉴别原子核同位素发挥作用。
+
+## 相关信息
+1. AMS-02 所用的 TOF 的闪烁体探测器：[EJ-200](https://eljentechnology.com/products/plastic-scintillators/ej-200-ej-204-ej-208-ej-212)
+2. 一些材料的性质可以通过[Atomic and Nuclear Properties of Materials](https://pdg.lbl.gov/2024/AtomicNuclearProperties)查询
+3. [NIST ESTAR 程序](https://physics.nist.gov/PhysRefData/Star/Text/ESTAR.html)可以用于计算电子的停止力、密度效应修正参数等。

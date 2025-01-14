@@ -1,4 +1,5 @@
 #include <iostream>
+
 #include <TVector3.h>
 
 #include "Material.h"
@@ -6,20 +7,16 @@
 #include "Particle.h"
 #include "Detector.h"
 
+void test(int argc, char *argv[]);
+
 int main(int argc, char *argv[])
 {
-    /* BEGIN Material properties */
-    // The material is polyvinyltoluene [(2-CH3C6H4CHCH2)n]
-    // The data below is taken from https://pdg.lbl.gov/2024/AtomicNuclearProperties/HTML/polyvinyltoluene.html (change "2024" in the URL to "current" for the latest data)
-    // Although the density of EJ-200 is 1.023 g/cm^3 (from https://eljentechnology.com/products/plastic-scintillators/ej-200-ej-204-ej-208-ej-212), the density of polyvinyltoluene is used
-    constexpr double density = 1.032;                     // Density of polyvinyltoluene in g/cm^3
-    constexpr double Z = 1 * 10.00 + 6 * 9.03;            // Atomic number of polyvinyltoluene (H: 10, C: 9.03)
-    constexpr double A = 1.0080 * 10.00 + 12.0107 * 9.03; // Atomic mass of polyvinyltoluene (H: 10, C: 9.03)
-    constexpr double zToARatio = 0.54141;                 // <Z/A> of polyvinyltoluene in g/mol
-    constexpr double I = 64.7;                            // Mean excitation energy of polyvinyltoluene in eV
-    constexpr double hbarOmegaP = 21.54;                  // Plasma energy of polyvinyltoluene in eV
 
-    const Material polyvinyltoluene(density, Z, A, zToARatio, I, hbarOmegaP); // Polyvinyltoluene material
+    test(argc, argv);
+
+    /* BEGIN Material properties */
+    // The EJ-200 scintillator counter is made of polyvinyltoluene [(2-CH3C6H4CHCH2)n]
+    const Material polyvinyltoluene(materials.at(MaterialName::Polyvinyltoluene)); // Polyvinyltoluene material
     /* END Material properties */
 
     /* BEGIN Detector properties */
@@ -38,30 +35,72 @@ int main(int argc, char *argv[])
     const Detector TOF(EJ_200, B); // Time-of-flight detector in AMS-02
     // /* END Detector properties */
 
-    // /* BEGIN Particle properties */
-    // // The initial position of the particle is fixed at the center of the first scintillator counter
-    // constexpr double charge = -1;                      // Charge of muon in e
-    // constexpr double mass0 = 105.658;                  // Rest mass of muon in MeV/c^2
-    // const TVector3 startMomentum(0, 0, 1e3);           // Initial momentum of muon in MeV/c
-    // const TVector3 startPosition(0, 0, TOF.getMinZ()); // Initial position of muon in cm
-
-    // const Particle startMuon(charge, mass0, startMomentum, startPosition); // Initial muon
-    // /* END Particle properties */
-
     /* BEGIN Particle properties */
     // The initial position of the particle is fixed at the center of the first scintillator counter
     constexpr double charge = 3;                       // Charge of Li6 in e
     constexpr double u = 931.49410372;                 // Atomic mass unit in MeV/c^2 (from https://en.wikipedia.org/wiki/Dalton_(unit))
     constexpr double mass0 = 6.0151228874 * u;         // Rest mass of Li6 in MeV/c^2 (from https://en.wikipedia.org/wiki/Isotopes_of_lithium)
-    const TVector3 startMomentum(0, 0, 1e4);           // Initial momentum of Li6 in MeV/c
+    constexpr double startBeta = 1;                    // Initial beta of Li6
     const TVector3 startPosition(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
 
-    const Particle startLi6(charge, mass0, startMomentum, startPosition); // Initial Li6
+    Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
     /* END Particle properties */
 
-    std::cout << "Cyclotron radius: " << TOF.particleCyclotronRadius(startLi6) << " cm" << std::endl;
-    std::cout << "beta: " << startLi6.getBeta() << std::endl;
-    std::cout << "Stopping power: " << polyvinyltoluene.meanRateOfEnergyLoss(startLi6) << " MeV/cm" << std::endl;
-
+    std::cout << "Cyclotron radius: " << TOF.particleCyclotronRadius(Li6) << " cm" << std::endl;
+    TVector3 direction = TOF.particleCyclotronDirection(Li6);
+    std::cout << "Cyclotron direction: (" << direction.X() << ", " << direction.Y() << ", " << direction.Z() << ")" << std::endl;
+    std::cout << "beta: " << Li6.getBeta() << std::endl;
+    std::cout << "Stopping power: " << EJ_200.at(0).energyLoss(Li6) << " MeV" << std::endl;
     return 0;
+}
+
+#include <TCanvas.h>
+#include <TGraph.h>
+
+void test(int argc, char *argv[])
+{
+    /* BEGIN Material properties */
+    const Material copper(materials.at(MaterialName::Copper)); // Copper material
+    /* END Material properties */
+
+    /* BEGIN Material properties 2 */
+    const Material polystyrene(materials.at(MaterialName::Polystyrene)); // Polystyrene material
+    /* END Material properties 2 */
+
+    /* BEGIN Particle properties */
+    constexpr double chargeElectron = -1;            // Charge in e
+    constexpr double mass0Electron = 0.5109989461;   // Rest mass in MeV/c^2
+    const TVector3 startMomentumElectron(0, 0, 1e3); // Initial momentum in MeV/c
+    const TVector3 startPositionElectron(0, 0, 0);   // Initial position in cm
+
+    Particle electron(chargeElectron, mass0Electron, startMomentumElectron, startPositionElectron); // Positive muon
+    /* END Particle properties */
+
+    /* BEGIN Particle properties 2 */
+    constexpr double chargeLi6 = 3;               // Charge in e
+    constexpr double u = 931.49410372;            // Atomic mass unit in MeV/c^2 (from https://en.wikipedia.org/wiki/Dalton_(unit))
+    constexpr double mass0Li6 = 6.0151228874 * u; // Rest mass in MeV/c^2
+    const TVector3 startMomentumLi6(0, 0, 1e3);   // Initial momentum in MeV/c
+    const TVector3 startPositionLi6(0, 0, 0);     // Initial position in cm
+
+    Particle Li6(chargeLi6, mass0Li6, startMomentumLi6, startPositionLi6); // Positive muon
+    /* END Particle properties 2 */
+
+    TCanvas *c1 = new TCanvas("c1", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    TGraph *graph = new TGraph();
+    graph->SetTitle("Li6 on Polystyrene;#beta#gamma;Mass Stopping Power [MeV cm^{2}/g]");
+    c1->SetLogx();
+
+    for (int i = 0; i <= 1000; ++i)
+    {
+        double betaGamma = TMath::Power(10, -1 + 4 * i / 1000.);
+        Li6.setBetaGamma(betaGamma);
+        graph->SetPoint(i, Li6.getBeta() * Li6.getGamma(), polystyrene.massStoppingPower(Li6));
+    }
+
+    graph->Draw("AL");
+    c1->SaveAs("test.png");
+
+    // std::cout << "mean rate of energy loss: " << copper.massStoppingPower(startMuon) << " MeV/cm" << std::endl;
+    exit(0);
 }
