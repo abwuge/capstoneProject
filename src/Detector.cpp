@@ -6,6 +6,8 @@
 #include <TCanvas.h>
 #include <TGraph.h>
 
+TRandom3 *Detector::Random = new TRandom3(0);
+
 Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B)
     : scintillatorCounters(scintillatorCounters), B(B)
 {
@@ -143,4 +145,44 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
     graph->Draw("AL");
 
     c1->SaveAs(fileName.c_str());
+}
+
+std::vector<double> Detector::detect(const Particle &particle) const
+{
+    std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    std::vector<double> detectedTimes;
+    detectedTimes.reserve(hitData.size());
+
+    for (int i = 0; i < hitData.size(); ++i)
+    {
+        const double hitTime = std::get<0>(hitData.at(i));
+        detectedTimes.push_back(Random->Gaus(hitTime, scintillatorCounters.at(i).getTimeResolution()));
+    }
+
+    return detectedTimes;
+}
+
+std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
+{
+    std::vector<double> detectedTimes;
+    detectedTimes.reserve(hitTimes.size());
+
+    for (int i = 0; i < hitTimes.size(); ++i)
+    {
+        const double hitTime = hitTimes.at(i);
+        detectedTimes.push_back(Random->Gaus(hitTime, scintillatorCounters.at(i).getTimeResolution()));
+    }
+
+    return detectedTimes;
+}
+
+double Detector::reconstructUsingLinearMethod(const Particle &particle) const
+{
+    std::vector<double> hitTimes = detect(particle);
+    return reconstructUsingLinearMethod(hitTimes);
+}
+
+double Detector::reconstructUsingLinearMethod(const std::vector<double> &hitTimes) const
+{
+    // Comming soon...
 }

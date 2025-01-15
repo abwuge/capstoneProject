@@ -50,6 +50,11 @@ public:
     inline double getThickness() const;
 
     /**
+     * @brief Get the time resolution of the scintillator counter
+     */
+    inline double getTimeResolution() const;
+
+    /**
      * @brief Get the material of the scintillator counter
      */
     inline Material getMaterial() const;
@@ -86,6 +91,8 @@ inline double ScintillatorCounters::getLocation() const { return this->location;
 inline bool ScintillatorCounters::getDirection() const { return this->direction; }
 
 inline double ScintillatorCounters::getThickness() const { return this->thickness; }
+
+inline double ScintillatorCounters::getTimeResolution() const { return this->timeResolution; }
 
 inline Material ScintillatorCounters::getMaterial() const { return this->material; }
 

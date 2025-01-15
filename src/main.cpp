@@ -2,7 +2,6 @@
 #include <tuple>
 #include <vector>
 
-#include <TApplication.h>
 #include <TVector3.h>
 #include <TCanvas.h>
 #include <TGraph.h>
@@ -72,28 +71,15 @@ int main(int argc, char *argv[])
 
     TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "test/deltaTime.png");
 
-//     TCanvas *c1 = new TCanvas("c1InMain", "", 3508, 2480); // A4 size in pixels(300 dpi)
-//     c1->cd();
+    std::vector<double> hitTimesWithEnergyLoss, hitTimesWithoutEnergyLoss;
 
-//     TGraph *graph = new TGraph();
-//     graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
+    hitTimesWithEnergyLoss.reserve(hitDataWithEnergyLoss.size());
+    for (const auto &hitData : hitDataWithEnergyLoss)
+        hitTimesWithEnergyLoss.push_back(std::get<0>(hitData));
 
-//     for (int i = 0; i < TOF.getScintillatorCounters().size(); ++i)
-//         try
-//         {
-//             graph->SetPoint(i, std::get<1>(hitDataWithEnergyLoss.at(i)), std::get<0>(hitDataWithEnergyLoss.at(i)) - std::get<0>(hitDataWithoutEnergyLoss.at(i)));
-//         }
-//         catch (const std::out_of_range &e)
-//         {
-// #if configEnableWarning
-//             printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hit scintillator counters!\n", i);
-// #endif
-//             break;
-//         }
-
-//     graph->Draw("AL");
-
-//     c1->SaveAs("test/deltaTime.png");
+    hitTimesWithoutEnergyLoss.reserve(hitDataWithoutEnergyLoss.size());
+    for (const auto &hitData : hitDataWithoutEnergyLoss)
+        hitTimesWithoutEnergyLoss.push_back(std::get<0>(hitData));
 
     return 0;
 }

@@ -15,6 +15,7 @@
 #include <string>
 
 #include <TVector3.h>
+#include <TRandom3.h>
 
 #include "config.h"
 #include "Particle.h"
@@ -23,6 +24,7 @@
 class Detector
 {
 private:
+    static TRandom3 *Random;                                 // Random number generator
     std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
     TVector3 B;                                             // Magnetic field
 
@@ -101,6 +103,36 @@ public:
      * @param fileName Name of the file to save the plot
      */
     void plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName = "test.png") const;
+
+    /**
+     * @brief Detect the particle in the scintillator counters
+     * 
+     * For better performance, use hitTimes instead of particle
+     * @param particle Incident particle
+     * @return Hit times of the particle in the scintillator counters
+     */
+    std::vector<double> detect(const Particle &particle) const;
+
+    /**
+     * @brief Detect the particle in the scintillator counters
+     * @param hitTimes Hit times of the particle
+     * @return Detected times of the particle in the scintillator counters
+     */
+    std::vector<double> detect(const std::vector<double> &hitTimes) const;
+
+    /**
+     * @brief Reconstruct the particle's beta using the linear method
+     * @param particle Incident particle
+     * @return Reconstructed beta of the particle
+     */
+    double reconstructUsingLinearMethod(const Particle &particle) const;
+
+    /**
+     * @brief Reconstruct the particle's beta using the linear method
+     * @param hitTimes Hit times of the particle
+     * @return Reconstructed beta of the particle
+     */
+    double reconstructUsingLinearMethod(const std::vector<double> &hitTimes) const;
 
     /* END Methods */
 };
