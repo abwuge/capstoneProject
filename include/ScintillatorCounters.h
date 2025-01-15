@@ -10,10 +10,11 @@
 class ScintillatorCounters
 {
 private:
-    double location;   // z-coordinate of the scintillator counter in cm (assuming it is an infinite plane in the x and y directions)
-    bool direction;    // Indicates whether the detector detects x (true) or y (false) coordinates
-    double thickness;  // Thickness of the scintillator counter in cm
-    Material material; // Material of the scintillator counter
+    double location;       // z-coordinate of the scintillator counter in cm (assuming it is an infinite plane in the x and y directions)
+    bool direction;        // Indicates whether the detector detects x (true) or y (false) coordinates
+    double thickness;      // Thickness of the scintillator counter in cm
+    double timeResolution; // Time resolution of the scintillator counter in ns
+    Material material;     // Material of the scintillator counter
 
 public:
     /* BEGIN Constructor & Destructor */
@@ -25,7 +26,7 @@ public:
      * @param thickness Thickness of the scintillator counter in cm
      * @param material Material of the scintillator counter
      */
-    ScintillatorCounters(const double location, const bool direction, const double thickness, const Material &material);
+    ScintillatorCounters(const double location, const bool direction, const double thickness, const double timeResolution, const Material &material);
 
     ~ScintillatorCounters();
 
@@ -66,7 +67,7 @@ public:
 
     /**
      * @brief Plot the energy loss of the particle in the scintillator counter using the Bethe-Bloch formula
-     * 
+     *
      * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
      * @param particle Particle
      * @param betaGammaMin Minimum beta * gamma of the particle

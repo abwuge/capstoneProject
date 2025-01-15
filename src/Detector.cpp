@@ -3,6 +3,8 @@
 #include <algorithm>
 
 #include <TMath.h>
+#include <TCanvas.h>
+#include <TGraph.h>
 
 Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B)
     : scintillatorCounters(scintillatorCounters), B(B)
@@ -65,7 +67,7 @@ std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Part
             {
                 const double particleEnergyLoss = scintillatorCounter.energyLoss(particle);
                 particle.setEnergy(particle.getEnergy() - particleEnergyLoss);
-#if configEnableDebugAtCoding
+#if configEnableDebug
                 printf("[Info] Energy loss: %f MeV, Energy: %f MeV, Velocity: %f c\n", particleEnergyLoss, particle.getEnergy(), particle.getVelocity().Mag());
 #endif
             }
@@ -107,4 +109,38 @@ std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Part
     }
 
     return hitData;
+}
+
+void Detector::plotDeltaTime(const Particle &particle, const std::string &fileName) const
+{
+    std::vector<std::tuple<double, double, TVector3>> hitDataWithEnergyLoss = this->particleHitData(particle, true);
+    std::vector<std::tuple<double, double, TVector3>> hitDataWithoutEnergyLoss = this->particleHitData(particle, false);
+
+    plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, fileName);
+}
+
+void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName) const
+{
+    TCanvas *c1 = new TCanvas("c1InDetector::plotDeltaTime", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    c1->cd();
+
+    TGraph *graph = new TGraph(scintillatorCounters.size());
+    graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
+
+    for (int i = 0; i < this->scintillatorCounters.size(); ++i)
+        try
+        {
+            graph->SetPoint(i, std::get<1>(hitDataWithEnergyLoss.at(i)), std::get<0>(hitDataWithEnergyLoss.at(i)) - std::get<0>(hitDataWithoutEnergyLoss.at(i)));
+        }
+        catch (const std::out_of_range &e)
+        {
+#if configEnableWarning
+            printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hit scintillator counters!\n", i);
+#endif
+            break;
+        }
+
+    graph->Draw("AL");
+
+    c1->SaveAs(fileName.c_str());
 }

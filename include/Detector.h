@@ -12,6 +12,7 @@
 
 #include <tuple>
 #include <vector>
+#include <string>
 
 #include <TVector3.h>
 
@@ -81,6 +82,25 @@ public:
      * @return Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters
      */
     std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true) const;
+
+    /**
+     * @brief Plot the time difference between the hit times of the particle in the scintillator counters with and without energy loss
+     *
+     * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
+     * @param particle Incident particle
+     * @param fileName Name of the file to save the plot
+     */
+    void plotDeltaTime(const Particle &particle, const std::string &fileName = "test.png") const;
+
+    /**
+     * @brief Plot the time difference between the hit times of the particle in the scintillator counters with and without energy loss
+     *
+     * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
+     * @param hitDataWithEnergyLoss Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters with energy loss
+     * @param hitDataWithoutEnergyLoss Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters without energy loss
+     * @param fileName Name of the file to save the plot
+     */
+    void plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName = "test.png") const;
 
     /* END Methods */
 };

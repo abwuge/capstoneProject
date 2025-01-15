@@ -6,8 +6,8 @@
 #include <TAxis.h>
 #include <TLegend.h>
 
-ScintillatorCounters::ScintillatorCounters(const double location, const bool direction, const double thickness, const Material &material)
-    : location(location), direction(direction), thickness(thickness), material(material) {}
+ScintillatorCounters::ScintillatorCounters(const double location, const bool direction, const double thickness, const double timeResolution, const Material &material)
+    : location(location), direction(direction), thickness(thickness), timeResolution(timeResolution), material(material) {}
 
 ScintillatorCounters::~ScintillatorCounters() {}
 
@@ -23,10 +23,10 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     TMultiGraph *mg = new TMultiGraph();
 
-    TGraph *graphEnergyLoss = new TGraph();
+    TGraph *graphEnergyLoss = new TGraph(nPoints);
     graphEnergyLoss->SetLineColor(kBlue);
 
-    TGraph *graphKineticEnergy = new TGraph();
+    TGraph *graphKineticEnergy = new TGraph(nPoints);
     graphKineticEnergy->SetLineColor(kRed);
 
     const double minExponent = TMath::Log10(betaGammaMin);

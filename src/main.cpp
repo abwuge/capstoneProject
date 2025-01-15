@@ -25,27 +25,26 @@ int main(int argc, char *argv[])
     return 0;
 #endif
 
+/* BEGIN Material properties */
 #if configTodo // IDK some porperties of polyvinyltoluene, so I used polystyrene to test the code
-    /* BEGIN Material properties */
     const Material polyvinyltoluene(materials.at(MaterialName::Polystyrene));
-    /* END Material properties */
 #else
-    /* BEGIN Material properties */
     // The EJ-200 scintillator counter is made of polyvinyltoluene [(2-CH3C6H4CHCH2)n]
     const Material polyvinyltoluene(materials.at(MaterialName::Polyvinyltoluene)); // Polyvinyltoluene material
-    /* END Material properties */
 #endif
+    /* END Material properties */
 
     /* BEGIN Detector properties */
     const std::vector<double> EJ_200Location = {-65, -63, 63, 65}; // z-coordinate of EJ-200 scintillator counters in AMS-02 in cm (assuming they are infinite planes in the x and y directions)
     const std::vector<bool> EJ_200Direction = {1, 0, 0, 1};        // Direction of EJ-200 scintillator counters in AMS-02 (1 for x, 0 for y)
     constexpr double thickness = 1;                                // Thickness of EJ-200 scintillator counters in cm
+    constexpr double timeResolution = 0.1;                         // Time resolution of EJ-200 scintillator counters in ns
 
     std::vector<ScintillatorCounters> EJ_200; // EJ-200 scintillator counters in AMS-02
     EJ_200.reserve(4);
     for (int i = 0; i < 4; i++)
     {
-        EJ_200.push_back(ScintillatorCounters(EJ_200Location[i], EJ_200Direction[i], thickness, polyvinyltoluene));
+        EJ_200.push_back(ScintillatorCounters(EJ_200Location[i], EJ_200Direction[i], thickness, timeResolution, polyvinyltoluene));
     }
     // const TVector3 B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
     const TVector3 B(0, 0, 0); // used for testing
@@ -62,50 +61,40 @@ int main(int argc, char *argv[])
     const TVector3 startPosition(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
 
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
-    Li6.setBetaGamma(10);                                  // Set the beta * gamma of Li6
-    std::cout << EJ_200.at(0).energyLoss(Li6) << std::endl;
+    Li6.setBetaGamma(1);                                   // Set the beta * gamma of Li6
     /* END Particle properties */
+
+    // plot the energy loss of Li6 in EJ-200 scintillator counters
+    EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
 
     std::vector<std::tuple<double, double, TVector3>> hitDataWithEnergyLoss = TOF.particleHitData(Li6, true);
     std::vector<std::tuple<double, double, TVector3>> hitDataWithoutEnergyLoss = TOF.particleHitData(Li6, false);
 
-    // std::cout << "Hit data with energy loss:" << std::endl;
-    // for (const auto &hit : hitDataWithEnergyLoss)
-    //     std::cout << "Hit time: " << std::get<0>(hit) << " ns, Propagation length: " << std::get<1>(hit) << " cm, Hit position: (" << std::get<2>(hit).X() << ", " << std::get<2>(hit).Y() << ", " << std::get<2>(hit).Z() << ") cm" << std::endl;
-    // std::cout << "Hit data without energy loss:" << std::endl;
-    // for (const auto &hit : hitDataWithoutEnergyLoss)
-    //     std::cout << "Hit time: " << std::get<0>(hit) << " ns, Propagation length: " << std::get<1>(hit) << " cm, Hit position: (" << std::get<2>(hit).X() << ", " << std::get<2>(hit).Y() << ", " << std::get<2>(hit).Z() << ") cm" << std::endl;
+    TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "test/deltaTime.png");
 
-    EJ_200.at(0).plotEnergyLoss(Li6);
+//     TCanvas *c1 = new TCanvas("c1InMain", "", 3508, 2480); // A4 size in pixels(300 dpi)
+//     c1->cd();
 
-    TGraph *graph = new TGraph();
-    graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
+//     TGraph *graph = new TGraph();
+//     graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
 
-    for (int i = 0; i < TOF.getScintillatorCounters().size(); ++i)
-        try
-        {
-            graph->SetPoint(i, std::get<1>(hitDataWithEnergyLoss.at(i)), std::get<0>(hitDataWithEnergyLoss.at(i)) - std::get<0>(hitDataWithoutEnergyLoss.at(i)));
-        }
-        catch (const std::out_of_range &e)
-        {
-#if configEnableWarning
-            printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hit scintillator counters!\n", i);
-#endif
-            break;
-        }
+//     for (int i = 0; i < TOF.getScintillatorCounters().size(); ++i)
+//         try
+//         {
+//             graph->SetPoint(i, std::get<1>(hitDataWithEnergyLoss.at(i)), std::get<0>(hitDataWithEnergyLoss.at(i)) - std::get<0>(hitDataWithoutEnergyLoss.at(i)));
+//         }
+//         catch (const std::out_of_range &e)
+//         {
+// #if configEnableWarning
+//             printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hit scintillator counters!\n", i);
+// #endif
+//             break;
+//         }
 
-    TCanvas *c1 = new TCanvas("c1InMain", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    c1->cd();
+//     graph->Draw("AL");
 
-    graph->Draw("AL");
+//     c1->SaveAs("test/deltaTime.png");
 
-    c1->SaveAs("test2.png");
-
-    // std::cout << "Cyclotron radius: " << TOF.particleCyclotronRadius(Li6) << " cm" << std::endl;
-    // TVector3 direction = TOF.particleCyclotronDirection(Li6);
-    // std::cout << "Cyclotron direction: (" << direction.X() << ", " << direction.Y() << ", " << direction.Z() << ")" << std::endl;
-    // std::cout << "beta: " << Li6.getBeta() << std::endl;
-    // std::cout << "Stopping power: " << EJ_200.at(0).energyLoss(Li6) << " MeV" << std::endl;
     return 0;
 }
 
