@@ -6,8 +6,10 @@
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TLegend.h>
+#include <TString.h>
 #include <TF1.h>
 #include <TH1F.h>
+#include <TGraphErrors.h>
 
 // Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
 // But the following code is more readable
@@ -136,7 +138,8 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
     Detector_plotDeltaTimeCanvas->cd();
 
     TGraph *graph = new TGraph(this->scintillatorCounters.size());
-    graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
+    graph->SetTitle(";Propagation length [cm];#Deltat [ns]");
+    graph->SetLineWidth(3);
 
     for (int i = 0; i < this->scintillatorCounters.size(); ++i)
         try
@@ -260,7 +263,8 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 
     TLegend *legend = new TLegend(0.1, 0.8, 0.3, 0.9);
     legend->AddEntry(graphRealData, "Real", "l");
-    legend->AddEntry(f1, "Reconstruct", "l");
+    legend->AddEntry(graphReconstructData, "Reconstruct", "p");
+    legend->AddEntry(f1, Form("y = %.2f * x", f1->GetParameter(0)), "l");
 
     legend->Draw();
 
@@ -274,7 +278,7 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
     Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
 }
 
-void Detector::plotDistributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions, const std::string &fileName) const
+std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions, const bool enablePlot, const std::string &fileName) const
 {
     const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
     const int n = hitData.size();
@@ -297,11 +301,45 @@ void Detector::plotDistributionOfReconstructionUsingLinearMethod(const Particle 
         histogram->Fill(betaReciprocalReal - betaReciprocalReconstruction);
     }
 
-    TCanvas *Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
+    TCanvas *Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas;
+    if (enablePlot)
+    {
+        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
 
-    histogram->Draw();
-    histogram->Fit("gaus");
+        histogram->Draw();
+        histogram->Fit("gaus", "Q");
 
-    Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SaveAs(fileName.c_str());
+        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SaveAs(fileName.c_str());
+    }
+
+    std::pair<double, double> meanAndStandardDeviation = {histogram->GetMean(), histogram->GetRMS()};
+
+    delete histogram;
+
+    return meanAndStandardDeviation;
+}
+
+void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, const double betaMax, const int nPoints, const std::string &fileName) const
+{
+    TCanvas *Detector_plotDeltaBetaReciprocalCanvas = new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDeltaBetaReciprocalCanvas->cd();
+
+    TGraphErrors *graphErrors = new TGraphErrors(nPoints + 1);
+    graphErrors->SetTitle(";#beta;#Delta(1/#beta)");
+    graphErrors->SetLineWidth(3);
+
+    const double step = (betaMax - betaMin) / nPoints;
+    for (int i = 0; i <= nPoints; ++i)
+    {
+        const double beta = betaMin + i * step;
+        particle.setBeta(beta);
+        const std::pair<double, double> deltaBetaReciprocal = this->distributionOfReconstructionUsingLinearMethod(particle, 10000, false);
+        graphErrors->SetPoint(i, beta, deltaBetaReciprocal.first);
+        graphErrors->SetPointError(i, 0, deltaBetaReciprocal.second);
+    }
+
+    graphErrors->Draw("AL");
+
+    Detector_plotDeltaBetaReciprocalCanvas->SaveAs(fileName.c_str());
 }

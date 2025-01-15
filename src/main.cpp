@@ -56,11 +56,10 @@ int main(int argc, char *argv[])
     constexpr double charge = 3;                       // Charge of Li6 in e
     constexpr double u = 931.49410372;                 // Atomic mass unit in MeV/c^2 (from https://en.wikipedia.org/wiki/Dalton_(unit))
     constexpr double mass0 = 6.0151228874 * u;         // Rest mass of Li6 in MeV/c^2 (from https://en.wikipedia.org/wiki/Isotopes_of_lithium)
-    constexpr double startBeta = 0.3;                  // Initial beta of Li6
+    constexpr double startBeta = 0.7;                  // Initial beta of Li6
     const TVector3 startPosition(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
 
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
-    Li6.setBetaGamma(1);                                   // Set the beta * gamma of Li6
     /* END Particle properties */
 
     std::cout << "The beta of Li6: " << Li6.getBeta() << std::endl;
@@ -73,17 +72,21 @@ int main(int argc, char *argv[])
 
     TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "test/deltaTime.png");
 
-    std::vector<double> hitTimes, propagationLengths;
+    // std::vector<double> hitTimes, propagationLengths;
 
-    hitTimes.reserve(hitDataWithEnergyLoss.size()), propagationLengths.reserve(hitDataWithEnergyLoss.size());
-    for (const auto &hitData : hitDataWithEnergyLoss)
-    {
+    // hitTimes.reserve(hitDataWithEnergyLoss.size()), propagationLengths.reserve(hitDataWithEnergyLoss.size());
+    // for (const auto &hitData : hitDataWithEnergyLoss)
+    // {
 
-        hitTimes.push_back(std::get<0>(hitData));
-        propagationLengths.push_back(std::get<1>(hitData));
-    }
+    //     hitTimes.push_back(std::get<0>(hitData));
+    //     propagationLengths.push_back(std::get<1>(hitData));
+    // }
 
-    TOF.plotDistributionOfReconstructionUsingLinearMethod(Li6, 10000, "test/reconstruction.png");
+    TOF.plotReconstructDataUsingLinearMethod(Li6, "test/reconstructData.png");
+
+    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "test/reconstruction.png");
+
+    TOF.plotDeltaBetaReciprocal(Li6, 0.5, 0.9, 4, "test/deltaBetaReciprocal.png");
 
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());

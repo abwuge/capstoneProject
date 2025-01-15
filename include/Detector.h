@@ -13,6 +13,7 @@
 #include <tuple>
 #include <vector>
 #include <string>
+#include <utility>
 
 #include <TVector3.h>
 #include <TRandom3.h>
@@ -143,12 +144,24 @@ public:
     void plotReconstructDataUsingLinearMethod(const Particle &particle, const std::string &fileName = "test.png") const;
 
     /**
-     * @brief Plot the distribution of the reconstructed 1/beta of the particle in this detector
+     * @brief Calculate the distribution of the reconstructed 1/beta of the particle in this detector
      * @param particle Incident particle
      * @param nReconstructions Number of reconstructions
+     * @param enablePlot Enable plot
+     * @param fileName Name of the file to save the plot
+     * @return Mean and standard deviation of the distribution of the reconstructed 1/beta of the particle
+     */
+    std::pair<double, double> distributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions = 10000, const bool enablePlot = false, const std::string &fileName = "test.png") const;
+
+    /**
+     * @brief Plot the difference between real and reconstructed 1/beta of the particle in this detectors
+     * @param particle Incident particle
+     * @param betaMin Minimum beta of the particle
+     * @param betaMax Maximum beta of the particle
+     * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
      * @param fileName Name of the file to save the plot
      */
-    void plotDistributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions = 10000, const std::string &fileName = "test.png") const;
+    void plotDeltaBetaReciprocal(Particle particle, const double betaMin = 1, const double betaMax = 5, const int nPoints = 4, const std::string &fileName = "test.png") const;
 
     /* END Methods */
 };

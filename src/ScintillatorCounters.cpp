@@ -23,11 +23,13 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     TMultiGraph *mg = new TMultiGraph();
 
-    TGraph *graphEnergyLoss = new TGraph(nPoints);
+    TGraph *graphEnergyLoss = new TGraph(nPoints + 1);
     graphEnergyLoss->SetLineColor(kBlue);
+    graphEnergyLoss->SetLineWidth(3);
 
     TGraph *graphKineticEnergy = new TGraph(nPoints);
     graphKineticEnergy->SetLineColor(kRed);
+    graphKineticEnergy->SetLineWidth(3);
 
     const double minExponent = TMath::Log10(betaGammaMin);
     const double maxExponent = TMath::Log10(betaGammaMax);
