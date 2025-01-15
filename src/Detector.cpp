@@ -7,6 +7,7 @@
 #include <TGraph.h>
 #include <TLegend.h>
 #include <TF1.h>
+#include <TH1F.h>
 
 // Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
 // But the following code is more readable
@@ -186,7 +187,7 @@ std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
 
 double Detector::reconstructUsingLinearMethod(const Particle &particle) const
 {
-    std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
     std::vector<double> hitTimes, propagationLengths;
     hitTimes.reserve(hitData.size()), propagationLengths.reserve(hitData.size());
 
@@ -224,9 +225,9 @@ double Detector::reconstructUsingLinearMethod(const std::vector<double> &detecte
     return betaReciprocal;
 }
 
-void Detector::plotReconstructData(const Particle &particle, const std::string &fileName) const
+void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, const std::string &fileName) const
 {
-    std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
     const int n = hitData.size();
     std::vector<double> hitTimes, propagationLengths;
     hitTimes.reserve(n), propagationLengths.reserve(n);
@@ -271,4 +272,36 @@ void Detector::plotReconstructData(const Particle &particle, const std::string &
 #endif
 
     Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
+}
+
+void Detector::plotDistributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions, const std::string &fileName) const
+{
+    const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    const int n = hitData.size();
+    std::vector<double> hitTimes, propagationLengths;
+    hitTimes.reserve(n), propagationLengths.reserve(n);
+
+    for (const auto &hit : hitData)
+    {
+        hitTimes.push_back(std::get<0>(hit));
+        propagationLengths.push_back(std::get<1>(hit));
+    }
+
+    const double betaReciprocalReal = 1 / particle.getBeta();
+
+    TH1F *histogram = new TH1F("1/#beta_{real} - 1/#beta_{rec}", ";1/#beta_{real} - 1/#beta_{rec};Counts", 100, -0.1, 0.1);
+    for (int i = 0; i < nReconstructions; ++i)
+    {
+        const std::vector<double> detectedTimes = this->detect(hitTimes);
+        const double betaReciprocalReconstruction = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
+        histogram->Fill(betaReciprocalReal - betaReciprocalReconstruction);
+    }
+
+    TCanvas *Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
+
+    histogram->Draw();
+    histogram->Fit("gaus");
+
+    Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SaveAs(fileName.c_str());
 }

@@ -63,6 +63,8 @@ int main(int argc, char *argv[])
     Li6.setBetaGamma(1);                                   // Set the beta * gamma of Li6
     /* END Particle properties */
 
+    std::cout << "The beta of Li6: " << Li6.getBeta() << std::endl;
+
     // plot the energy loss of Li6 in EJ-200 scintillator counters
     EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
 
@@ -81,8 +83,8 @@ int main(int argc, char *argv[])
         propagationLengths.push_back(std::get<1>(hitData));
     }
 
-    TOF.reconstructUsingLinearMethod(TOF.detect(hitTimes), propagationLengths);
-    
+    TOF.plotDistributionOfReconstructionUsingLinearMethod(Li6, 10000, "test/reconstruction.png");
+
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());
 #endif

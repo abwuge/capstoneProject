@@ -135,7 +135,20 @@ public:
      */
     double reconstructUsingLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const;
 
-    void plotReconstructData(const Particle &particle, const std::string &fileName = "test.png") const;
+    /**
+     * @brief Plot the reconstructed data of the particle in this detector
+     * @param particle Incident particle
+     * @param fileName Name of the file to save the plot
+     */
+    void plotReconstructDataUsingLinearMethod(const Particle &particle, const std::string &fileName = "test.png") const;
+
+    /**
+     * @brief Plot the distribution of the reconstructed 1/beta of the particle in this detector
+     * @param particle Incident particle
+     * @param nReconstructions Number of reconstructions
+     * @param fileName Name of the file to save the plot
+     */
+    void plotDistributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions = 10000, const std::string &fileName = "test.png") const;
 
     /* END Methods */
 };
