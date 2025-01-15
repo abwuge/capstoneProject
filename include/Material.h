@@ -2,16 +2,17 @@
 #define MATERIAL_H
 
 #include <unordered_map>
-#include <string>
 
+#include "config.h"
 #include "Particle.h"
 
 /**
  * @brief Enum class for material names
- * 
+ *
  * The materials in the enum class is predefined materials
  */
-enum class MaterialName {
+enum class MaterialName
+{
     Copper,
     Polyvinyltoluene,
     Polystyrene,
@@ -66,32 +67,27 @@ public:
     /**
      * @brief Get the density of the material in g/cm^3
      */
-    double getDensity() const;
+    inline double getDensity() const;
 
     /**
      * @brief Get the atomic number of the material
      */
-    double getZ() const;
+    inline double getZ() const;
 
     /**
      * @brief Get the atomic mass of the material in g/mol
      */
-    double getA() const;
-
-    /**
-     * @brief Get the <Z/A> of the material in g/mol
-     */
-    double getZToARatio() const;
+    inline double getA() const;
 
     /**
      * @brief Get the mean excitation energy of the material in eV
      */
-    double getI() const;
+    inline double getI() const;
 
     /**
      * @brief Get the plasma energy of the material in eV
      */
-    double getHbarOmegaP() const;
+    inline double getHbarOmegaP() const;
 
     /* END Getters */
 
@@ -123,6 +119,16 @@ public:
 
     /* END Methods */
 };
+
+inline double Material::getDensity() const { return this->density; }
+
+inline double Material::getZ() const { return this->Z; }
+
+inline double Material::getA() const { return this->A; }
+
+inline double Material::getI() const { return this->I; }
+
+inline double Material::getHbarOmegaP() const { return this->hbarOmegaP; }
 
 const std::unordered_map<MaterialName, Material> materials = {
     /* TODO: IDK if delta(x_0) is delta_0 */

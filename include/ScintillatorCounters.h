@@ -1,6 +1,9 @@
 #ifndef SCINTILLATORCOUNTERS_H
 #define SCINTILLATORCOUNTERS_H
 
+#include <string>
+
+#include "config.h"
 #include "Material.h"
 #include "Particle.h"
 
@@ -23,7 +26,7 @@ public:
      * @param material Material of the scintillator counter
      */
     ScintillatorCounters(const double location, const bool direction, const double thickness, const Material &material);
-    
+
     ~ScintillatorCounters();
 
     /* END Constructor & Destructor */
@@ -33,22 +36,22 @@ public:
     /**
      * @brief Get the z-coordinate of the scintillator counter
      */
-    double getLocation() const;
+    inline double getLocation() const;
 
     /**
      * @brief Get whether the detector detects x (true) or y (false) coordinates
      */
-    bool getDirection() const;
+    inline bool getDirection() const;
 
     /**
      * @brief Get the thickness of the scintillator counter
      */
-    double getThickness() const;
+    inline double getThickness() const;
 
     /**
      * @brief Get the material of the scintillator counter
      */
-    Material getMaterial() const;
+    inline Material getMaterial() const;
 
     /* END Getters */
 
@@ -61,7 +64,28 @@ public:
      */
     double energyLoss(const Particle &particle) const;
 
+    /**
+     * @brief Plot the energy loss of the particle in the scintillator counter using the Bethe-Bloch formula
+     * 
+     * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
+     * @param particle Particle
+     * @param betaGammaMin Minimum beta * gamma of the particle
+     * @param betaGammaMax Maximum beta * gamma of the particle
+     * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
+     * @param enableKineticEnergy Enable kinetic energy in the plot
+     * @param fileName Name of the file to save the plot
+     */
+    void plotEnergyLoss(Particle particle, const double betaGammaMin = 0.1, const double betaGammaMax = 1000, const int nPoints = 1000, const bool enableKineticEnergy = true, const std::string &fileName = "test.png") const;
+
     /* END Methods */
 };
+
+inline double ScintillatorCounters::getLocation() const { return this->location; }
+
+inline bool ScintillatorCounters::getDirection() const { return this->direction; }
+
+inline double ScintillatorCounters::getThickness() const { return this->thickness; }
+
+inline Material ScintillatorCounters::getMaterial() const { return this->material; }
 
 #endif /* SCINTILLATORCOUNTERS_H */

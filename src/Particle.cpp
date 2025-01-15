@@ -5,11 +5,11 @@
 Particle::Particle(const double charge, const double mass0, const TVector3 &momentum, const TVector3 &position)
     : charge(charge), mass0(mass0), momentum(momentum), position(position)
 {
-    energy = TMath::Sqrt(momentum.Mag2() + mass0 * mass0);
-    gamma = energy / mass0;
-    mass = gamma * mass0;
-    velocity = momentum * (1. / energy);
-    beta = velocity.Mag();
+    this->energy = TMath::Sqrt(this->momentum.Mag2() + this->mass0 * this->mass0);
+    this->mass = this->energy;
+    this->gamma = this->energy / this->mass0;
+    this->velocity = this->momentum * (1 / this->mass);
+    this->beta = this->velocity.Mag();
 }
 
 Particle::Particle(const double charge, const double mass0, double beta, const TVector3 &position, const TVector3 &direction)
@@ -17,85 +17,93 @@ Particle::Particle(const double charge, const double mass0, double beta, const T
 {
     if (beta < 0)
     {
-        printf("Beta cannot be negative, setting beta to 0!\n");
+#if configEnableWarning
+        printf("[Warning] Beta cannot be negative, setting beta to 0!\n");
+#endif
         beta = 0;
     }
 
     if (beta >= 1)
     {
-        printf("Beta must be less than 1, setting beta to 0.9999999999999999!\n");
+#if configEnableWarning
+        printf("[Warning] Beta must be less than 1, setting beta to 0.9999999999999999!\n");
+#endif
         beta = 0.9999999999999999;
     }
 
     this->beta = beta;
-    energy = mass0 / TMath::Sqrt(1 - beta * beta);
-    gamma = energy / mass0;
-    mass = gamma * mass0;
-    velocity = beta * direction;
-    momentum = mass * velocity;
+    this->gamma = 1 / TMath::Sqrt(1 - this->beta * this->beta);
+    this->energy = this->gamma * this->mass0;
+    this->mass = this->energy;
+    this->velocity = this->beta * direction;
+    this->momentum = this->mass * this->velocity;
 }
 
 Particle::~Particle() {}
 
-double Particle::getCharge() const
+bool Particle::setMass(double mass)
 {
-    return charge;
-}
+    if (mass < this->mass0)
+    {
+#if configEnableWarning
+        printf("[Warning] Mass / Energy cannot be less than the rest mass! Mass / Energy is set to the rest mass!\n");
+#endif
+        mass = this->mass0;
+    }
 
-double Particle::getMass0() const
-{
-    return mass0;
-}
+    this->mass = mass;
+    this->energy = this->mass;
+    this->gamma = this->energy / this->mass0;
+    this->momentum = TMath::Sqrt(this->energy * this->energy - this->mass0 * this->mass0) * this->momentum.Unit();
+    this->velocity = this->momentum * (1 / this->mass);
+    this->beta = this->velocity.Mag();
 
-double Particle::getMass() const
-{
-    return mass;
-}
-
-double Particle::getEnergy() const
-{
-    return energy;
-}
-
-double Particle::getGamma() const
-{
-    return gamma;
-}
-
-double Particle::getBeta() const
-{
-    return beta;
-}
-
-TVector3 Particle::getPosition() const
-{
-    return position;
-}
-
-TVector3 Particle::getMomentum() const
-{
-    return momentum;
-}
-
-TVector3 Particle::getVelocity() const
-{
-    return velocity;
+    return true;
 }
 
 bool Particle::setBeta(const double beta)
 {
     if (beta < 0 || beta >= 1)
     {
-        printf("Beta must be between 0 and 1!\n");
+#if configEnableWarning
+        printf("[Warning] Beta must be between 0 and 1! Beta remains %f!\n", this->beta);
+#endif
         return false;
     }
 
     this->beta = beta;
-    energy = mass0 / TMath::Sqrt(1 - beta * beta);
-    gamma = energy / mass0;
-    mass = gamma * mass0;
-    velocity = beta * velocity.Unit();
-    momentum = mass * velocity;
+    this->gamma = 1 / TMath::Sqrt(1 - this->beta * this->beta);
+    this->energy = this->gamma * this->mass0;
+    this->mass = this->energy;
+    this->velocity = this->beta * this->velocity.Unit();
+    this->momentum = this->mass * this->velocity;
+
+    return true;
+}
+
+bool Particle::setBetaGamma(double betaGamma)
+{
+    if (betaGamma < 0)
+    {
+#if configEnableWarning
+        printf("[Warning] Beta * gamma cannot be negative! Beta * gamma is set to 0!\n");
+#endif
+        betaGamma = 0;
+    }
+
+    this->beta = betaGamma / TMath::Sqrt(1 + betaGamma * betaGamma);
+    this->gamma = betaGamma / this->beta;
+    this->energy = this->gamma * this->mass0;
+    this->mass = this->energy;
+    this->velocity = this->beta * this->velocity.Unit();
+    this->momentum = this->mass * this->velocity;
+
+    return true;
+}
+
+bool Particle::setPosition(const TVector3 &position)
+{
+    this->position = position;
 
     return true;
 }
@@ -103,29 +111,23 @@ bool Particle::setBeta(const double beta)
 bool Particle::setMomentum(const TVector3 &momentum)
 {
     this->momentum = momentum;
-    energy = TMath::Sqrt(momentum.Mag2() + mass0 * mass0);
-    gamma = energy / mass0;
-    mass = gamma * mass0;
-    velocity = momentum * (1. / energy);
-    beta = velocity.Mag();
+    this->energy = TMath::Sqrt(this->momentum.Mag2() + this->mass0 * this->mass0);
+    this->mass = this->energy;
+    this->gamma = this->energy / this->mass0;
+    this->velocity = this->momentum * (1 / this->mass);
+    this->beta = this->velocity.Mag();
 
     return true;
 }
 
-bool Particle::setBetaGamma(const double betaGamma)
+bool Particle::setVelocity(const TVector3 &velocity)
 {
-    if (betaGamma < 0)
-    {
-        printf("Beta * gamma cannot be negative!\n");
-        return false;
-    }
-
-    beta = betaGamma / TMath::Sqrt(1 + betaGamma * betaGamma);
-    gamma = betaGamma / beta;
-    energy = gamma * mass0;
-    mass = gamma * mass0;
-    velocity = beta * velocity.Unit();
-    momentum = mass * velocity;
+    this->velocity = velocity;
+    this->beta = this->velocity.Mag();
+    this->gamma = 1 / TMath::Sqrt(1 - this->beta * this->beta);
+    this->energy = this->gamma * this->mass0;
+    this->mass = this->energy;
+    this->momentum = this->mass * this->velocity;
 
     return true;
 }
@@ -134,8 +136,13 @@ double Particle::Wmax() const
 {
     constexpr double electronMass = 0.51099895000; // Rest mass of the electron in MeV/c^2
 
-    const double betaGamma = beta * gamma;                     // Beta * gamma of the particle
-    const double electronMassMassRatio = electronMass / mass0; // Rest mass of the electron / rest mass of the particle
+#if configEnableWarning
+    if (this->mass0 < 100 * electronMass)
+        printf("[Warning] The mass of the particle is NOT santisfied the condition: M >> m_e! The error of W_max may be high!\n");
+#endif
 
-    return 2 * electronMass * betaGamma * betaGamma / (1 + 2 * gamma * electronMassMassRatio + electronMassMassRatio * electronMassMassRatio);
+    const double betaGamma = this->beta * this->gamma;               // Beta * gamma of the particle
+    const double electronMassMassRatio = electronMass / this->mass0; // Rest mass of the electron / rest mass of the particle
+
+    return 2 * electronMass * betaGamma * betaGamma / (1 + 2 * this->gamma * electronMassMassRatio + electronMassMassRatio * electronMassMassRatio);
 }

@@ -10,9 +10,12 @@
 #ifndef DETECTOR_H
 #define DETECTOR_H
 
+#include <tuple>
 #include <vector>
+
 #include <TVector3.h>
 
+#include "config.h"
 #include "Particle.h"
 #include "ScintillatorCounters.h"
 
@@ -41,17 +44,17 @@ public:
     /**
      * @brief Get the minimum z-coordinate of the scintillator counters
      */
-    double getMinZ() const;
+    inline double getMinZ() const;
 
     /**
      * @brief Get the scintillator counters
      */
-    std::vector<ScintillatorCounters> getScintillatorCounters() const;
+    inline std::vector<ScintillatorCounters> getScintillatorCounters() const;
 
     /**
      * @brief Get the magnetic field
      */
-    TVector3 getB() const;
+    inline TVector3 getB() const;
 
     /* END Getters */
 
@@ -72,13 +75,20 @@ public:
     TVector3 particleCyclotronDirection(const Particle &particle) const;
 
     /**
-     * @brief Calculate the hit positions of the particle in the scintillator counters
-     * @param particle Particle
-     * @return Hit positions of the particle in the scintillator counters
+     * @brief Calculate the hit time and positions of the particle in the scintillator counters
+     * @param particle Incident particle
+     * @param enableEnergyLoss Enable energy loss in the scintillator counters
+     * @return Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters
      */
-    std::vector<TVector3> particleHitPositions(const Particle &particle) const;
+    std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true) const;
 
     /* END Methods */
 };
+
+inline double Detector::getMinZ() const { return this->scintillatorCounters.front().getLocation(); }
+
+inline std::vector<ScintillatorCounters> Detector::getScintillatorCounters() const { return this->scintillatorCounters; }
+
+inline TVector3 Detector::getB() const { return this->B; }
 
 #endif /* DETECTOR_H */

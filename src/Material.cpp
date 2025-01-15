@@ -8,45 +8,20 @@ Material::Material(const double density, const double Z, const double A, const d
 
 Material::~Material() {}
 
-double Material::getDensity() const
-{
-    return density;
-}
-
-double Material::getZ() const
-{
-    return Z;
-}
-
-double Material::getA() const
-{
-    return A;
-}
-
-double Material::getI() const
-{
-    return I;
-}
-
-double Material::getHbarOmegaP() const
-{
-    return hbarOmegaP;
-}
-
 double Material::delta(const double beta, const double gamma) const
 {
     const double x = TMath::Log10(beta * gamma);
-    if (x <= DECx0)
+    if (x <= this->DECx0)
     {
-        return DECdelta0 ? DECdelta0 * TMath::Power(10, 2 * (x - DECx0)) : 0;
+        return this->DECdelta0 ? this->DECdelta0 * TMath::Power(10, 2 * (x - this->DECx0)) : 0;
     }
-    else if (x <= DECx1)
+    else if (x <= this->DECx1)
     {
-        return 2 * TMath::Log(10) * x - DECoverlineC + DECa * TMath::Power(DECx1 - x, DECk);
+        return 2 * TMath::Log(10) * x - this->DECoverlineC + this->DECa * TMath::Power(this->DECx1 - x, this->DECk);
     }
     else
     {
-        return 2 * TMath::Log(10) * x - DECoverlineC;
+        return 2 * TMath::Log(10) * x - this->DECoverlineC;
     }
 }
 
@@ -58,20 +33,28 @@ double Material::massStoppingPower(const Particle &particle) const
     const double beta = particle.getBeta();
     const double gamma = particle.getGamma();
 
+#if configEnableWarning
+    const double betaGamma = beta * gamma;
+    if (betaGamma < 0.1)
+        printf("[Warning] The energy of the particle (%g MeV/c) is too low! The error of the mass stopping power may be high!\n", particle.getEnergy());
+    else if (betaGamma > 1000)
+        printf("[Warning] The energy of the particle (%g MeV/c) is too high! The error of the mass stopping power may be high!\n", particle.getEnergy());
+#endif
+
     const double beta2 = beta * beta;
 
     // <-dE/dx> = partA * [0.5 * ln(partB) - beta2 - 0.5 * delta(beta, gamma)]
-    const double partA = K * (z * z) * (Z / A) * (1 / beta2);
-    const double partB = 1e12 * (2 * electronMass * beta * beta * gamma * gamma * particle.Wmax()) / (I * I); // electronMass in MeV/c^2, Wmax in MeV, but, I in eV, so multiply by 1e12
+    const double partA = K * (z * z) * (this->Z / this->A) * (1 / beta2);
+    const double partB = 1e12 * (2 * electronMass * beta * beta * gamma * gamma * particle.Wmax()) / (this->I * this->I); // electronMass in MeV/c^2, Wmax in MeV, but, I in eV, so multiply by 1e12
 
-    #ifdef DEBUG
-        printf("W_max: %g, partB: %g\n", particle.Wmax(), partB);
-    #endif
+#if configEnableDebug
+    printf("[Info] W_max: %g, partA: %g, partB: %g\n", particle.Wmax(), partA, partB);
+#endif
 
-    return partA * (0.5 * TMath::Log(partB) - beta2 - 0.5 * delta(beta, gamma));
+    return partA * (0.5 * TMath::Log(partB) - beta2 - 0.5 * this->delta(beta, gamma));
 }
 
 double Material::linearStoppingPower(const Particle &particle) const
 {
-    return density * massStoppingPower(particle);
+    return this->density * this->massStoppingPower(particle);
 }
