@@ -71,15 +71,21 @@ int main(int argc, char *argv[])
 
     TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "test/deltaTime.png");
 
-    std::vector<double> hitTimesWithEnergyLoss, hitTimesWithoutEnergyLoss;
+    std::vector<double> hitTimes, propagationLengths;
 
-    hitTimesWithEnergyLoss.reserve(hitDataWithEnergyLoss.size());
+    hitTimes.reserve(hitDataWithEnergyLoss.size()), propagationLengths.reserve(hitDataWithEnergyLoss.size());
     for (const auto &hitData : hitDataWithEnergyLoss)
-        hitTimesWithEnergyLoss.push_back(std::get<0>(hitData));
+    {
 
-    hitTimesWithoutEnergyLoss.reserve(hitDataWithoutEnergyLoss.size());
-    for (const auto &hitData : hitDataWithoutEnergyLoss)
-        hitTimesWithoutEnergyLoss.push_back(std::get<0>(hitData));
+        hitTimes.push_back(std::get<0>(hitData));
+        propagationLengths.push_back(std::get<1>(hitData));
+    }
+
+    TOF.reconstructUsingLinearMethod(TOF.detect(hitTimes), propagationLengths);
+    
+#if configEnableDebug
+    printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());
+#endif
 
     return 0;
 }

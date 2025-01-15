@@ -5,8 +5,16 @@
 #include <TMath.h>
 #include <TCanvas.h>
 #include <TGraph.h>
+#include <TLegend.h>
+#include <TF1.h>
 
-TRandom3 *Detector::Random = new TRandom3(0);
+// Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
+// But the following code is more readable
+#if configEnableFixedSeed
+TRandom3 *Detector::Random = new TRandom3(1); // Fixed seed 1
+#else
+TRandom3 *Detector::Random = new TRandom3(0); // 0 means time-based seed
+#endif
 
 Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B)
     : scintillatorCounters(scintillatorCounters), B(B)
@@ -118,15 +126,15 @@ void Detector::plotDeltaTime(const Particle &particle, const std::string &fileNa
     std::vector<std::tuple<double, double, TVector3>> hitDataWithEnergyLoss = this->particleHitData(particle, true);
     std::vector<std::tuple<double, double, TVector3>> hitDataWithoutEnergyLoss = this->particleHitData(particle, false);
 
-    plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, fileName);
+    this->plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, fileName);
 }
 
 void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName) const
 {
-    TCanvas *c1 = new TCanvas("c1InDetector::plotDeltaTime", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    c1->cd();
+    TCanvas *Detector_plotDeltaTimeCanvas = new TCanvas("Detector_plotDeltaTimeCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDeltaTimeCanvas->cd();
 
-    TGraph *graph = new TGraph(scintillatorCounters.size());
+    TGraph *graph = new TGraph(this->scintillatorCounters.size());
     graph->SetTitle("#Deltat vs. Propagation length;Propagation length [cm];#Deltat [ns]");
 
     for (int i = 0; i < this->scintillatorCounters.size(); ++i)
@@ -144,7 +152,7 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
 
     graph->Draw("AL");
 
-    c1->SaveAs(fileName.c_str());
+    Detector_plotDeltaTimeCanvas->SaveAs(fileName.c_str());
 }
 
 std::vector<double> Detector::detect(const Particle &particle) const
@@ -156,7 +164,7 @@ std::vector<double> Detector::detect(const Particle &particle) const
     for (int i = 0; i < hitData.size(); ++i)
     {
         const double hitTime = std::get<0>(hitData.at(i));
-        detectedTimes.push_back(Random->Gaus(hitTime, scintillatorCounters.at(i).getTimeResolution()));
+        detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
     }
 
     return detectedTimes;
@@ -170,7 +178,7 @@ std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
     for (int i = 0; i < hitTimes.size(); ++i)
     {
         const double hitTime = hitTimes.at(i);
-        detectedTimes.push_back(Random->Gaus(hitTime, scintillatorCounters.at(i).getTimeResolution()));
+        detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
     }
 
     return detectedTimes;
@@ -178,11 +186,89 @@ std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
 
 double Detector::reconstructUsingLinearMethod(const Particle &particle) const
 {
-    std::vector<double> hitTimes = detect(particle);
-    return reconstructUsingLinearMethod(hitTimes);
+    std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    std::vector<double> hitTimes, propagationLengths;
+    hitTimes.reserve(hitData.size()), propagationLengths.reserve(hitData.size());
+
+    for (const auto &hit : hitData)
+    {
+        hitTimes.push_back(std::get<0>(hit));
+        propagationLengths.push_back(std::get<1>(hit));
+    }
+
+    return this->reconstructUsingLinearMethod(this->detect(hitTimes), propagationLengths);
 }
 
-double Detector::reconstructUsingLinearMethod(const std::vector<double> &hitTimes) const
+double Detector::reconstructUsingLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const
 {
-    // Comming soon...
+    const int n = detectedTimes.size();
+    if (n != propagationLengths.size())
+    {
+        printf("[Error] The sizes of detected times and propagation lengths are not the same!\n");
+        exit(1);
+    }
+
+    TGraph *graph = new TGraph(n, &propagationLengths[0], &detectedTimes[0]);
+
+    TF1 *f1 = new TF1("f1", "[0] * x", 0, propagationLengths.back());
+
+    graph->Fit(f1, "Q");
+
+    constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
+    const double betaReciprocal = f1->GetParameter(0) * conversionFactor;
+
+#if configEnableDebug
+    printf("[Info] The reconstructed 1/beta using the linear method: %f\n", betaReciprocal);
+#endif
+
+    return betaReciprocal;
+}
+
+void Detector::plotReconstructData(const Particle &particle, const std::string &fileName) const
+{
+    std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    const int n = hitData.size();
+    std::vector<double> hitTimes, propagationLengths;
+    hitTimes.reserve(n), propagationLengths.reserve(n);
+
+    for (const auto &hit : hitData)
+    {
+        hitTimes.push_back(std::get<0>(hit));
+        propagationLengths.push_back(std::get<1>(hit));
+    }
+
+    std::vector<double> detectedTimes = this->detect(hitTimes);
+
+    TGraph *graphRealData = new TGraph(n, &propagationLengths[0], &hitTimes[0]);
+    graphRealData->SetLineWidth(3);
+
+    TGraph *graphReconstructData = new TGraph(n, &propagationLengths[0], &detectedTimes[0]);
+    graphReconstructData->SetMarkerStyle(20);
+    graphReconstructData->SetMarkerSize(3);
+    graphReconstructData->SetTitle(";Propagation length [cm];Time [ns]");
+
+    TCanvas *Detector_plotReconstructDataCanvas = new TCanvas("Detector_plotReconstructDataCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotReconstructDataCanvas->cd();
+
+    TF1 *f1 = new TF1("f1", "[0] * x", 0, propagationLengths.back());
+
+    graphReconstructData->Draw("AP");
+    graphReconstructData->Fit(f1, "Q");
+
+    graphRealData->Draw("L same");
+
+    TLegend *legend = new TLegend(0.1, 0.8, 0.3, 0.9);
+    legend->AddEntry(graphRealData, "Real", "l");
+    legend->AddEntry(f1, "Reconstruct", "l");
+
+    legend->Draw();
+
+#if configEnableDebug
+    constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
+    const double betaReciprocal = f1->GetParameter(0) * conversionFactor;
+    printf("[Info] The reconstructed 1 / beta using the linear method: %f\n", betaReciprocal);
+    printf("[Info] The real 1 / beta: %f\n", 1 / particle.getBeta());
+#endif
+
+    Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
 }

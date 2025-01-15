@@ -78,15 +78,15 @@ public:
     TVector3 particleCyclotronDirection(const Particle &particle) const;
 
     /**
-     * @brief Calculate the hit time and positions of the particle in the scintillator counters
+     * @brief Calculate the hit times and positions of the particle in this detector
      * @param particle Incident particle
      * @param enableEnergyLoss Enable energy loss in the scintillator counters
-     * @return Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters
+     * @return Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector
      */
     std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true) const;
 
     /**
-     * @brief Plot the time difference between the hit times of the particle in the scintillator counters with and without energy loss
+     * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss
      *
      * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
      * @param particle Incident particle
@@ -95,26 +95,26 @@ public:
     void plotDeltaTime(const Particle &particle, const std::string &fileName = "test.png") const;
 
     /**
-     * @brief Plot the time difference between the hit times of the particle in the scintillator counters with and without energy loss
+     * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss
      *
      * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
-     * @param hitDataWithEnergyLoss Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters with energy loss
-     * @param hitDataWithoutEnergyLoss Hit time (in ns), propagation length (in cm), and hit position (in cm) of the particle in the scintillator counters without energy loss
+     * @param hitDataWithEnergyLoss Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector with energy loss
+     * @param hitDataWithoutEnergyLoss Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector without energy loss
      * @param fileName Name of the file to save the plot
      */
     void plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName = "test.png") const;
 
     /**
-     * @brief Detect the particle in the scintillator counters
+     * @brief Detect the particle
      * 
      * For better performance, use hitTimes instead of particle
      * @param particle Incident particle
-     * @return Hit times of the particle in the scintillator counters
+     * @return Detected times of the particle in the scintillator counters
      */
     std::vector<double> detect(const Particle &particle) const;
 
     /**
-     * @brief Detect the particle in the scintillator counters
+     * @brief Detect the particle
      * @param hitTimes Hit times of the particle
      * @return Detected times of the particle in the scintillator counters
      */
@@ -123,16 +123,19 @@ public:
     /**
      * @brief Reconstruct the particle's beta using the linear method
      * @param particle Incident particle
-     * @return Reconstructed beta of the particle
+     * @return Reconstructed 1/beta of the particle
      */
     double reconstructUsingLinearMethod(const Particle &particle) const;
 
     /**
      * @brief Reconstruct the particle's beta using the linear method
-     * @param hitTimes Hit times of the particle
-     * @return Reconstructed beta of the particle
+     * @param detectedTimes Detected times of the particle in the scintillator counters
+     * @param propagationLengths Propagation lengths of the particle in this decetor
+     * @return Reconstructed 1/beta of the particle
      */
-    double reconstructUsingLinearMethod(const std::vector<double> &hitTimes) const;
+    double reconstructUsingLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const;
+
+    void plotReconstructData(const Particle &particle, const std::string &fileName = "test.png") const;
 
     /* END Methods */
 };

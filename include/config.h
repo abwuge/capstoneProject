@@ -1,6 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// random related
+#define configEnableFixedSeed 1
+
 // notice related
 #define configEnableWarning 1
 
