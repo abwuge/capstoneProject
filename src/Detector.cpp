@@ -135,6 +135,7 @@ void Detector::plotDeltaTime(const Particle &particle, const std::string &fileNa
 void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName) const
 {
     TCanvas *Detector_plotDeltaTimeCanvas = new TCanvas("Detector_plotDeltaTimeCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDeltaTimeCanvas->SetGrid();
     Detector_plotDeltaTimeCanvas->cd();
 
     TGraph *graph = new TGraph(this->scintillatorCounters.size());
@@ -239,6 +240,9 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
     {
         hitTimes.push_back(std::get<0>(hit));
         propagationLengths.push_back(std::get<1>(hit));
+#if configEnableDebug
+        printf("[Info] propagation length: %f cm, hit time: %f ns\n", std::get<1>(hit), std::get<0>(hit));
+#endif
     }
 
     std::vector<double> detectedTimes = this->detect(hitTimes);
@@ -248,10 +252,12 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 
     TGraph *graphReconstructData = new TGraph(n, &propagationLengths[0], &detectedTimes[0]);
     graphReconstructData->SetMarkerStyle(20);
+    graphReconstructData->SetMarkerColor(kRed);
     graphReconstructData->SetMarkerSize(3);
     graphReconstructData->SetTitle(";Propagation length [cm];Time [ns]");
 
     TCanvas *Detector_plotReconstructDataCanvas = new TCanvas("Detector_plotReconstructDataCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotReconstructDataCanvas->SetGrid();
     Detector_plotReconstructDataCanvas->cd();
 
     TF1 *f1 = new TF1("f1", "[0] * x", 0, propagationLengths.back());
@@ -261,10 +267,12 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 
     graphRealData->Draw("L same");
 
-    TLegend *legend = new TLegend(0.1, 0.8, 0.3, 0.9);
+    TLegend *legend = new TLegend(0.1, 0.8, 0.4, 0.9);
     legend->AddEntry(graphRealData, "Real", "l");
-    legend->AddEntry(graphReconstructData, "Reconstruct", "p");
-    legend->AddEntry(f1, Form("y = %.2f * x", f1->GetParameter(0)), "l");
+    legend->AddEntry(graphReconstructData, "Detected", "p");
+    const int exponent = TMath::FloorNint(TMath::Log10(f1->GetParameter(0)));
+    const double mantissa = f1->GetParameter(0) / TMath::Power(10, exponent);
+    legend->AddEntry(f1, Form("y = %.3f#times10^{%i} x (fit line)", mantissa, exponent), "l");
 
     legend->Draw();
 
@@ -305,6 +313,7 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
     if (enablePlot)
     {
         Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SetGrid();
         Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
 
         histogram->Draw();
@@ -323,6 +332,7 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
 void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, const double betaMax, const int nPoints, const std::string &fileName) const
 {
     TCanvas *Detector_plotDeltaBetaReciprocalCanvas = new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDeltaBetaReciprocalCanvas->SetGrid();
     Detector_plotDeltaBetaReciprocalCanvas->cd();
 
     TGraphErrors *graphErrors = new TGraphErrors(nPoints + 1);

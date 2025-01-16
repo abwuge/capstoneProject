@@ -117,7 +117,7 @@ public:
      * @param beta Beta of the particle (v/c)
      * @return True if the beta is set successfully, false otherwise
      */
-    bool setBeta(const double beta);
+    bool setBeta(double beta);
 
     /**
      * @brief Set the beta * gamma of the particle

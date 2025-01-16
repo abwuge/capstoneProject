@@ -18,8 +18,10 @@ double ScintillatorCounters::energyLoss(const Particle &particle) const
 
 void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGammaMin, const double betaGammaMax, const int nPoints, const bool enableKineticEnergy, const std::string &fileName) const
 {
-    TCanvas *c1 = new TCanvas("c1InScintillatorCounters::plotEnergyLoss", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    c1->SetLogx();
+    TCanvas *ScintillatorCounters_plotEnergyLossCanvas = new TCanvas("ScintillatorCounters_plotEnergyLossCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    ScintillatorCounters_plotEnergyLossCanvas->SetLogx();
+    ScintillatorCounters_plotEnergyLossCanvas->SetGrid();
+    ScintillatorCounters_plotEnergyLossCanvas->cd();
 
     TMultiGraph *mg = new TMultiGraph();
 
@@ -58,11 +60,7 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     mg->GetYaxis()->SetRangeUser(0, yMax);
 
-    // QUESTION: When I put the definition of c1 here, the x-axis of the plot is not form betaGammaMin to betaGammaMax. Why?
-    // TCanvas *c1 = new TCanvas("c1InScintillatorCounters::plotEnergyLoss", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    // c1->SetLogx();
-
-    c1->cd();
+    // QUESTION: When I put the definition of TCanvas here, the x-axis of the plot is not form betaGammaMin to betaGammaMax. Why?
 
     mg->Draw("AL");
 
@@ -73,7 +71,7 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
         legend->AddEntry(graphKineticEnergy, "Kinetic energy", "l");
         legend->Draw();
     }
-    c1->SaveAs(fileName.c_str());
+    ScintillatorCounters_plotEnergyLossCanvas->SaveAs(fileName.c_str());
 
     return;
 }

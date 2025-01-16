@@ -61,14 +61,22 @@ bool Particle::setMass(double mass)
     return true;
 }
 
-bool Particle::setBeta(const double beta)
+bool Particle::setBeta(double beta)
 {
-    if (beta < 0 || beta >= 1)
+    if (beta < 0 || beta > 1)
     {
 #if configEnableWarning
         printf("[Warning] Beta must be between 0 and 1! Beta remains %f!\n", this->beta);
 #endif
         return false;
+    }
+
+    if (beta == 1)
+    {
+#if configEnableWarning
+        printf("[Warning] Beta cannot be 1! Beta is set to 0.9999999999999999!\n");
+#endif
+        beta = 0.9999999999999999;
     }
 
     this->beta = beta;

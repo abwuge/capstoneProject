@@ -53,11 +53,12 @@ int main(int argc, char *argv[])
 
     /* BEGIN Particle properties */
     // The initial position of the particle is fixed at the center of the first scintillator counter
-    constexpr double charge = 3;                       // Charge of Li6 in e
-    constexpr double u = 931.49410372;                 // Atomic mass unit in MeV/c^2 (from https://en.wikipedia.org/wiki/Dalton_(unit))
-    constexpr double mass0 = 6.0151228874 * u;         // Rest mass of Li6 in MeV/c^2 (from https://en.wikipedia.org/wiki/Isotopes_of_lithium)
-    constexpr double startBeta = 0.7;                  // Initial beta of Li6
-    const TVector3 startPosition(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
+    constexpr double charge = 3;                                                 // Charge of Li6 in e
+    constexpr double uIn_kg = 1.66053906660e-27;                                 // Atomic mass unit in kg (from https://www.bipm.org/documents/20126/41483022/SI-Brochure-9.pdf)
+    constexpr double u = uIn_kg * TMath::C() * TMath::C() / (1e6 * TMath::Qe()); // Atomic mass unit in MeV/c^2
+    constexpr double mass0 = 6.01512289 * u;                                     // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
+    constexpr double startBeta = 0.7;                                            // Initial beta of Li6
+    const TVector3 startPosition(0, 0, TOF.getMinZ());                           // Initial position of Li6 in cm
 
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
     /* END Particle properties */
