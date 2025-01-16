@@ -19,7 +19,6 @@ double ScintillatorCounters::energyLoss(const Particle &particle) const
 void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGammaMin, const double betaGammaMax, const int nPoints, const bool enableKineticEnergy, const std::string &fileName) const
 {
     TCanvas *ScintillatorCounters_plotEnergyLossCanvas = new TCanvas("ScintillatorCounters_plotEnergyLossCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    ScintillatorCounters_plotEnergyLossCanvas->SetLogx();
     ScintillatorCounters_plotEnergyLossCanvas->SetGrid();
     ScintillatorCounters_plotEnergyLossCanvas->cd();
 
@@ -29,7 +28,7 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
     graphEnergyLoss->SetLineColor(kBlue);
     graphEnergyLoss->SetLineWidth(3);
 
-    TGraph *graphKineticEnergy = new TGraph(nPoints);
+    TGraph *graphKineticEnergy = new TGraph(nPoints + 1);
     graphKineticEnergy->SetLineColor(kRed);
     graphKineticEnergy->SetLineWidth(3);
 
@@ -40,13 +39,15 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
     double yMax = 0;
     for (int i = 0; i <= nPoints; ++i)
     {
-        double betaGamma = TMath::Power(10, minExponent + i * step);
+        const double betaGamma = TMath::Power(10, minExponent + i * step);
         particle.setBetaGamma(betaGamma);
-        double energyLoss = this->energyLoss(particle);
+        const double energyLoss = this->energyLoss(particle);
         yMax = TMath::Max(yMax, energyLoss);
-        graphEnergyLoss->SetPoint(i, betaGamma, energyLoss);
+
+        const double beta = particle.getBeta();
+        graphEnergyLoss->SetPoint(i, beta, energyLoss);
         if (enableKineticEnergy)
-            graphKineticEnergy->SetPoint(i, betaGamma, particle.getEnergy() - particle.getMass0());
+            graphKineticEnergy->SetPoint(i, beta, particle.getEnergy() - particle.getMass0());
     }
 
     mg->Add(graphEnergyLoss);
@@ -54,9 +55,9 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
         mg->Add(graphKineticEnergy);
 
     if (enableKineticEnergy)
-        mg->SetTitle(";#beta#gamma;Energy loss / Kinetic energy [MeV]");
+        mg->SetTitle(";#beta;Energy loss / Kinetic energy [MeV]");
     else
-        mg->SetTitle(";#beta#gamma;Energy loss [MeV]");
+        mg->SetTitle(";#beta;Energy loss [MeV]");
 
     mg->GetYaxis()->SetRangeUser(0, yMax);
 

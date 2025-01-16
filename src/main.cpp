@@ -63,8 +63,6 @@ int main(int argc, char *argv[])
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
     /* END Particle properties */
 
-    std::cout << "The beta of Li6: " << Li6.getBeta() << std::endl;
-
     // plot the energy loss of Li6 in EJ-200 scintillator counters
     EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
 
@@ -85,9 +83,9 @@ int main(int argc, char *argv[])
 
     TOF.plotReconstructDataUsingLinearMethod(Li6, "test/reconstructData.png");
 
-    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "test/reconstruction.png");
+    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "test/distributionOfReconstruction.png");
 
-    TOF.plotDeltaBetaReciprocal(Li6, 0.5, 0.9, 4, "test/deltaBetaReciprocal.png");
+    TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, "test/deltaBetaReciprocal.png");
 
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());

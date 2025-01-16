@@ -9,6 +9,7 @@
 #include <TString.h>
 #include <TF1.h>
 #include <TH1F.h>
+#include <TLine.h>
 #include <TGraphErrors.h>
 
 // Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
@@ -301,7 +302,10 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
 
     const double betaReciprocalReal = 1 / particle.getBeta();
 
-    TH1F *histogram = new TH1F("1/#beta_{real} - 1/#beta_{rec}", ";1/#beta_{real} - 1/#beta_{rec};Counts", 100, -0.1, 0.1);
+    const double deltaBetaReciprocalWithZeroResolution = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
+
+    TH1F *histogram = new TH1F("1/#beta_{real} - 1/#beta_{rec}", ";1/#beta_{real} - 1/#beta_{rec};Counts", 100, deltaBetaReciprocalWithZeroResolution - 0.1, deltaBetaReciprocalWithZeroResolution + 0.1);
+    histogram->SetLineWidth(3);
     for (int i = 0; i < nReconstructions; ++i)
     {
         const std::vector<double> detectedTimes = this->detect(hitTimes);
@@ -318,6 +322,16 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
 
         histogram->Draw();
         histogram->Fit("gaus", "Q");
+
+        TLine *line = new TLine(deltaBetaReciprocalWithZeroResolution, 0, deltaBetaReciprocalWithZeroResolution, histogram->GetMaximum());
+        line->SetLineWidth(3);
+
+        line->Draw("same");
+
+#if configEnableDebug
+        printf("[Info] The mean of the distribution of the difference between real and reconstructed 1/beta: %f\n", histogram->GetMean());
+        printf("[Info] The difference between real and reconstructed 1/beta with zero resolution: %f\n", deltaBetaReciprocalWithZeroResolution);
+#endif
 
         Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SaveAs(fileName.c_str());
     }
