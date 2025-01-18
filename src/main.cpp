@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 
+#include <TROOT.h>
 #include <TVector3.h>
 #include <TCanvas.h>
 #include <TGraph.h>
@@ -23,6 +24,8 @@ int main(int argc, char *argv[])
     test(argc, argv);
     return 0;
 #endif
+
+    gROOT->SetStyle("Pub");
 
 /* BEGIN Material properties */
 #if configTodo // IDK some porperties of polyvinyltoluene, so I used polystyrene to test the code

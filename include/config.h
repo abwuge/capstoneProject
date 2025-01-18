@@ -15,4 +15,7 @@
 // todo related
 #define configTodo 1
 
+// influence related
+#define configEnableTimeResolution 1
+
 #endif /* CONFIG_H */

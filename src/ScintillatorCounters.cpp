@@ -26,11 +26,9 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     TGraph *graphEnergyLoss = new TGraph(nPoints + 1);
     graphEnergyLoss->SetLineColor(kBlue);
-    graphEnergyLoss->SetLineWidth(3);
 
     TGraph *graphKineticEnergy = new TGraph(nPoints + 1);
     graphKineticEnergy->SetLineColor(kRed);
-    graphKineticEnergy->SetLineWidth(3);
 
     const double minExponent = TMath::Log10(betaGammaMin);
     const double maxExponent = TMath::Log10(betaGammaMax);
@@ -55,9 +53,9 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
         mg->Add(graphKineticEnergy);
 
     if (enableKineticEnergy)
-        mg->SetTitle(";#beta;Energy loss / Kinetic energy [MeV]");
+        mg->SetTitle(";#beta;#DeltaE or E_{k} [MeV]");
     else
-        mg->SetTitle(";#beta;Energy loss [MeV]");
+        mg->SetTitle(";#beta;#DeltaE [MeV]");
 
     mg->GetYaxis()->SetRangeUser(0, yMax);
 
@@ -65,11 +63,12 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     mg->Draw("AL");
 
-    TLegend *legend = new TLegend(0.7, 0.8, 0.9, 0.9);
+    TLegend *legend = new TLegend(0.65, 0.75, 0.85, 0.85);
+    legend->SetBorderSize(kNone);
     if (enableKineticEnergy)
     {
-        legend->AddEntry(graphEnergyLoss, "Energy loss", "l");
-        legend->AddEntry(graphKineticEnergy, "Kinetic energy", "l");
+        legend->AddEntry(graphEnergyLoss, "#DeltaE (Energy loss)", "l");
+        legend->AddEntry(graphKineticEnergy, "E_{k} (Kinetic energy)", "l");
         legend->Draw();
     }
     ScintillatorCounters_plotEnergyLossCanvas->SaveAs(fileName.c_str());

@@ -163,6 +163,21 @@ public:
      */
     void plotDeltaBetaReciprocal(Particle particle, const double betaMin = 1, const double betaMax = 5, const int nPoints = 4, const std::string &fileName = "test.png") const;
 
+    /**
+     * @brief Reconstruct the particle's beta using the non-linear method
+     * @param particle Incident particle
+     * @return Reconstructed 1/beta of the particle
+     */
+    double reconstructUsingNonLinearMethod(const Particle &particle) const;
+
+    /**
+     * @brief Reconstruct the particle's beta using the non-linear method
+     * @param detectedTimes Detected times of the particle in the scintillator counters
+     * @param propagationLengths Propagation lengths of the particle in this decetor
+     * @return Reconstructed 1/beta of the particle
+     */
+    double reconstructUsingNonLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const;
+
     /* END Methods */
 };
 

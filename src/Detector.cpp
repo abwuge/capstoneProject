@@ -10,6 +10,7 @@
 #include <TF1.h>
 #include <TH1F.h>
 #include <TLine.h>
+#include <TFitResult.h>
 #include <TGraphErrors.h>
 
 // Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
@@ -140,8 +141,7 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
     Detector_plotDeltaTimeCanvas->cd();
 
     TGraph *graph = new TGraph(this->scintillatorCounters.size());
-    graph->SetTitle(";Propagation length [cm];#Deltat [ns]");
-    graph->SetLineWidth(3);
+    graph->SetTitle(";L [cm];#Deltat [ns]");
 
     for (int i = 0; i < this->scintillatorCounters.size(); ++i)
         try
@@ -159,6 +159,27 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
     graph->Draw("AL");
 
     Detector_plotDeltaTimeCanvas->SaveAs(fileName.c_str());
+
+    // Zoom in (Use "{}" to limit the scope of variables)
+    {
+        double *x = graph->GetX(), *y = graph->GetY();
+        int n = graph->GetN();
+        double dx = x[n - 1] - x[0], dy = y[n - 1] - y[0];
+
+        if (n > 1)
+        {
+            graph->GetXaxis()->SetRangeUser(x[1] - 1e-2 * dx, x[1] + 1e-2 * dx);
+            graph->GetYaxis()->SetRangeUser(y[1] - 1e-2 * dy, y[1] + 1e-2 * dy);
+            Detector_plotDeltaTimeCanvas->SaveAs(TString::Format("%s_zoom_1.png", fileName.c_str()));
+        }
+
+        if (n > 2)
+        {
+            graph->GetXaxis()->SetRangeUser(x[2] - 1e-2 * dx, x[2] + 1e-2 * dx);
+            graph->GetYaxis()->SetRangeUser(y[2] - 1e-2 * dy, y[2] + 1e-2 * dy);
+            Detector_plotDeltaTimeCanvas->SaveAs(TString::Format("%s_zoom_2.png", fileName.c_str()));
+        }
+    }
 }
 
 std::vector<double> Detector::detect(const Particle &particle) const
@@ -170,7 +191,11 @@ std::vector<double> Detector::detect(const Particle &particle) const
     for (int i = 0; i < hitData.size(); ++i)
     {
         const double hitTime = std::get<0>(hitData.at(i));
+#if configEnableTimeResolution
         detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
+#else
+        detectedTimes.push_back(hitTime);
+#endif
     }
 
     return detectedTimes;
@@ -184,7 +209,11 @@ std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
     for (int i = 0; i < hitTimes.size(); ++i)
     {
         const double hitTime = hitTimes.at(i);
+#if configEnableTimeResolution
         detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
+#else
+        detectedTimes.push_back(hitTime);
+#endif
     }
 
     return detectedTimes;
@@ -249,13 +278,14 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
     std::vector<double> detectedTimes = this->detect(hitTimes);
 
     TGraph *graphRealData = new TGraph(n, &propagationLengths[0], &hitTimes[0]);
-    graphRealData->SetLineWidth(3);
+    graphRealData->SetMarkerStyle(kFullTriangleUp);
+    graphRealData->SetMarkerSize(3);
+    graphRealData->SetTitle(";L [cm];t [ns]");
 
     TGraph *graphReconstructData = new TGraph(n, &propagationLengths[0], &detectedTimes[0]);
-    graphReconstructData->SetMarkerStyle(20);
+    graphReconstructData->SetMarkerStyle(kFullCircle);
     graphReconstructData->SetMarkerColor(kRed);
-    graphReconstructData->SetMarkerSize(3);
-    graphReconstructData->SetTitle(";Propagation length [cm];Time [ns]");
+    graphReconstructData->SetMarkerSize(2);
 
     TCanvas *Detector_plotReconstructDataCanvas = new TCanvas("Detector_plotReconstructDataCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
     Detector_plotReconstructDataCanvas->SetGrid();
@@ -263,17 +293,18 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 
     TF1 *f1 = new TF1("f1", "[0] * x", 0, propagationLengths.back());
 
-    graphReconstructData->Draw("AP");
+    graphRealData->Draw("AP");
+
+    graphReconstructData->Draw("PSAME");
     graphReconstructData->Fit(f1, "Q");
 
-    graphRealData->Draw("L same");
-
-    TLegend *legend = new TLegend(0.1, 0.8, 0.4, 0.9);
-    legend->AddEntry(graphRealData, "Real", "l");
+    TLegend *legend = new TLegend(0.2, 0.75, 0.5, 0.85);
+    legend->SetBorderSize(kNone);
+    legend->AddEntry(graphRealData, "Real", "p");
     legend->AddEntry(graphReconstructData, "Detected", "p");
     const int exponent = TMath::FloorNint(TMath::Log10(f1->GetParameter(0)));
     const double mantissa = f1->GetParameter(0) / TMath::Power(10, exponent);
-    legend->AddEntry(f1, Form("y = %.3f#times10^{%i} x (fit line)", mantissa, exponent), "l");
+    legend->AddEntry(f1, Form("y = %.3f#times10^{%i} x (fit line)", mantissa, exponent));
 
     legend->Draw();
 
@@ -304,8 +335,7 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
 
     const double deltaBetaReciprocalWithZeroResolution = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
 
-    TH1F *histogram = new TH1F("1/#beta_{real} - 1/#beta_{rec}", ";1/#beta_{real} - 1/#beta_{rec};Counts", 100, deltaBetaReciprocalWithZeroResolution - 0.1, deltaBetaReciprocalWithZeroResolution + 0.1);
-    histogram->SetLineWidth(3);
+    TH1F *histogram = new TH1F("#Delta(1/#beta)", ";#Delta(1/#beta);", 100, deltaBetaReciprocalWithZeroResolution - 0.1, deltaBetaReciprocalWithZeroResolution + 0.1);
     for (int i = 0; i < nReconstructions; ++i)
     {
         const std::vector<double> detectedTimes = this->detect(hitTimes);
@@ -317,19 +347,24 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
     if (enablePlot)
     {
         Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SetGrid();
         Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
 
         histogram->Draw();
-        histogram->Fit("gaus", "Q");
+        TFitResultPtr fitResult = histogram->Fit("gaus", "QS");
+
+        double mean = fitResult->Value(1), sigma = fitResult->Value(2);
 
         TLine *line = new TLine(deltaBetaReciprocalWithZeroResolution, 0, deltaBetaReciprocalWithZeroResolution, histogram->GetMaximum());
-        line->SetLineWidth(3);
-
         line->Draw("same");
 
+        TLegend *legend = new TLegend(0.6, 0.75, 0.85, 0.85);
+        legend->SetBorderSize(kNone);
+        legend->SetHeader(Form("#mu = %.3f, #sigma = %.3f", mean, sigma), "C");
+        legend->AddEntry(line, Form("#Delta(1/#beta)_{real} = %.3f", deltaBetaReciprocalWithZeroResolution), "l");
+        legend->Draw();
+
 #if configEnableDebug
-        printf("[Info] The mean of the distribution of the difference between real and reconstructed 1/beta: %f\n", histogram->GetMean());
+        printf("[Info] The mean of the distribution of the difference between real and reconstructed 1/beta: %f\n", mean);
         printf("[Info] The difference between real and reconstructed 1/beta with zero resolution: %f\n", deltaBetaReciprocalWithZeroResolution);
 #endif
 
@@ -351,7 +386,6 @@ void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, 
 
     TGraphErrors *graphErrors = new TGraphErrors(nPoints + 1);
     graphErrors->SetTitle(";#beta;#Delta(1/#beta)");
-    graphErrors->SetLineWidth(3);
 
     const double step = (betaMax - betaMin) / nPoints;
     for (int i = 0; i <= nPoints; ++i)
@@ -366,4 +400,28 @@ void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, 
     graphErrors->Draw("AL");
 
     Detector_plotDeltaBetaReciprocalCanvas->SaveAs(fileName.c_str());
+}
+
+double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const
+{
+    const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
+    std::vector<double> hitTimes, propagationLengths;
+    hitTimes.reserve(hitData.size()), propagationLengths.reserve(hitData.size());
+
+    for (const auto &hit : hitData)
+    {
+        hitTimes.push_back(std::get<0>(hit));
+        propagationLengths.push_back(std::get<1>(hit));
+    }
+
+    return this->reconstructUsingNonLinearMethod(this->detect(hitTimes), propagationLengths);
+}
+
+double Detector::reconstructUsingNonLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const
+{
+    const double initialBetaReciprocal = 1 / 0.5; // initial guess
+
+    // Coming soon...
+
+    return 0;
 }
