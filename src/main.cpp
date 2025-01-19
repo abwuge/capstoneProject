@@ -1,4 +1,5 @@
 #include <iostream>
+#include <thread>
 #include <tuple>
 #include <vector>
 
@@ -11,6 +12,7 @@
 #include <TLegend.h>
 
 #include "config.h"
+#include "ThreadPool.h"
 #include "Material.h"
 #include "ScintillatorCounters.h"
 #include "Particle.h"
@@ -19,6 +21,13 @@
 int main(int argc, char *argv[])
 {
     gROOT->SetStyle("Pub");
+    ROOT::EnableThreadSafety();
+    ROOT::EnableImplicitMT();
+
+    if (argc > 1)
+        ThreadPool::getInstance(std::stoi(argv[1]));
+    else
+        ThreadPool::getInstance(std::thread::hardware_concurrency());
 
 /* BEGIN Material properties */
 #if configTodo // IDK some porperties of polyvinyltoluene, so I used polystyrene to test the code

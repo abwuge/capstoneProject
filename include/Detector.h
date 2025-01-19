@@ -17,8 +17,10 @@
 
 #include <TVector3.h>
 #include <TRandom3.h>
+#include <TH1F.h>
 
 #include "config.h"
+#include "ThreadPool.h"
 #include "Particle.h"
 #include "ScintillatorCounters.h"
 
@@ -28,6 +30,12 @@ private:
     static TRandom3 *Random;                                // Random number generator
     std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
     TVector3 B;                                             // Magnetic field
+
+    /* BEGIN Methods */
+
+    void processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, TH1F *histogram) const;
+
+    /* END Methods */
 
 public:
     /* BEGIN Constructor & Destructor */
