@@ -5,15 +5,10 @@
 </div>
 
 ---
-**Stage One**
-> Work content of this stage:
-> 1. Provide basic code for subsequent stages
-> 2. Implement Monte Carlo simulation method for zero magnetic field and vertical particle incidence
-> 3. Attempt to reconstruct using linear reconstruction method and demonstrate the effect of linear reconstruction
->
-> ![](result/deltaBetaReciprocal.png)
->
-> For more details, you can download the author's [presentation for this stage](presentation/Stage：零磁场垂直入射线性重建.pptx).
+**Stage Two**
+> Expected work content of this stage:
+> 1. Implement nonlinear reconstruction
+> 2. Add energy fluctuations in Monte Carlo simulation
 
 ## Project Introduction
 

@@ -75,3 +75,31 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
 
     return;
 }
+
+double ScintillatorCounters::LandauMostProbableEnergyLoss_xi(const Particle &particle) const
+{
+    constexpr double K = 0.307075;                                  // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for dE/dx)
+    const double z = particle.getCharge();                          // charge number of the particle (since we use charge in units of e, the charge number is the same as the charge)
+    const double x = this->thickness * this->material.getDensity(); // x in g/cm^2
+    const double Z = this->material.getZ();
+    const double A = this->material.getA();
+    const double beta = particle.getBeta();
+
+    return (K / 2) * (Z / A) * (z * z) * (x / (beta * beta));
+}
+
+double ScintillatorCounters::LandauMostProbableEnergyLoss(const Particle &particle) const
+{
+    constexpr double massElectron = 0.51099895000; // Rest mass of the electron in MeV/c^2
+    constexpr double j = 0.200;                    // Constant for the Landau most probable energy loss
+    const double I = this->material.getI() * 1e-6; // convert eV to MeV
+    const double beta = particle.getBeta();
+    const double gamma = particle.getGamma();
+
+    const double xi = this->LandauMostProbableEnergyLoss_xi(particle);
+
+    const double partA = 2 * massElectron * beta * beta * gamma * gamma / I;
+    const double partB = xi / I;
+
+    return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->material.delta(beta, gamma));
+}

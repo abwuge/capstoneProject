@@ -27,9 +27,9 @@ double Material::delta(const double beta, const double gamma) const
 
 double Material::massStoppingPower(const Particle &particle) const
 {
-    constexpr double K = 0.307075;                 // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for the Bethe formula)
+    constexpr double K = 0.307075;                 // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for dE/dx)
     constexpr double electronMass = 0.51099895000; // Rest mass of the electron in MeV/c^2
-    const double z = particle.getCharge();
+    const double z = particle.getCharge();         // charge number of the particle (since we use charge in units of e, the charge number is the same as the charge)
     const double beta = particle.getBeta();
     const double gamma = particle.getGamma();
 

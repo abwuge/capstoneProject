@@ -83,6 +83,20 @@ public:
      */
     void plotEnergyLoss(Particle particle, const double betaGammaMin = 0.1, const double betaGammaMax = 1000, const int nPoints = 1000, const bool enableKineticEnergy = true, const std::string &fileName = "test.png") const;
 
+    /**
+     * @brief Calculate xi for the Landau energy loss distribution
+     * @param particle Particle
+     * @return xi for the Landau energy loss distribution in MeV
+     */
+    double LandauMostProbableEnergyLoss_xi(const Particle &particle) const;
+
+    /**
+     * @brief Calculate the most probable energy loss of the particle in the scintillator counter
+     * @param particle Particle
+     * @return Most probable energy loss of the particle in the scintillator counter in MeV
+     */
+    double LandauMostProbableEnergyLoss(const Particle &particle) const;
+
     /* END Methods */
 };
 

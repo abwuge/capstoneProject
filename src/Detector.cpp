@@ -12,6 +12,9 @@
 #include <TLine.h>
 #include <TFitResult.h>
 #include <TGraphErrors.h>
+#include <Math/Minimizer.h>
+#include <Math/Factory.h>
+#include <Math/Functor.h>
 
 // Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
 // But the following code is more readable
@@ -318,7 +321,7 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
     Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
 }
 
-std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMethod(const Particle &particle, const int nReconstructions, const bool enablePlot, const std::string &fileName) const
+std::pair<double, double> Detector::distributionOfReconstruction(const Particle &particle, const int nReconstructions, const bool enableLinerMethod, const bool enablePlot, const std::string &fileName) const
 {
     const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
     const int n = hitData.size();
@@ -333,21 +336,31 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
 
     const double betaReciprocalReal = 1 / particle.getBeta();
 
-    const double deltaBetaReciprocalWithZeroResolution = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
+    double deltaBetaReciprocalWithZeroResolution;
+    if (enableLinerMethod)
+        deltaBetaReciprocalWithZeroResolution = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
+    else
+        deltaBetaReciprocalWithZeroResolution = betaReciprocalReal - this->reconstructUsingNonLinearMethod(particle, hitTimes, propagationLengths);
 
     TH1F *histogram = new TH1F("#Delta(1/#beta)", ";#Delta(1/#beta);", 100, deltaBetaReciprocalWithZeroResolution - 0.1, deltaBetaReciprocalWithZeroResolution + 0.1);
     for (int i = 0; i < nReconstructions; ++i)
     {
         const std::vector<double> detectedTimes = this->detect(hitTimes);
-        const double betaReciprocalReconstruction = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
+
+        double betaReciprocalReconstruction;
+        if (enableLinerMethod)
+            betaReciprocalReconstruction = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
+        else
+            betaReciprocalReconstruction = this->reconstructUsingNonLinearMethod(particle, detectedTimes, propagationLengths);
+
         histogram->Fill(betaReciprocalReal - betaReciprocalReconstruction);
     }
 
-    TCanvas *Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas;
+    TCanvas *Detector_plotDistributionOfReconstructionCanvas;
     if (enablePlot)
     {
-        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas = new TCanvas("Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->cd();
+        Detector_plotDistributionOfReconstructionCanvas = new TCanvas("Detector_plotDistributionOfReconstructionCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+        Detector_plotDistributionOfReconstructionCanvas->cd();
 
         histogram->Draw();
         TFitResultPtr fitResult = histogram->Fit("gaus", "QS");
@@ -368,17 +381,18 @@ std::pair<double, double> Detector::distributionOfReconstructionUsingLinearMetho
         printf("[Info] The difference between real and reconstructed 1/beta with zero resolution: %f\n", deltaBetaReciprocalWithZeroResolution);
 #endif
 
-        Detector_plotDistributionOfReconstructionUsingLinearMethodCanvas->SaveAs(fileName.c_str());
+        Detector_plotDistributionOfReconstructionCanvas->SaveAs(fileName.c_str());
     }
 
     std::pair<double, double> meanAndStandardDeviation = {histogram->GetMean(), histogram->GetRMS()};
 
     delete histogram;
+    delete Detector_plotDistributionOfReconstructionCanvas;
 
     return meanAndStandardDeviation;
 }
 
-void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, const double betaMax, const int nPoints, const std::string &fileName) const
+void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, const double betaMax, const int nPoints, const bool enableLinearMethod, const std::string &fileName) const
 {
     TCanvas *Detector_plotDeltaBetaReciprocalCanvas = new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
     Detector_plotDeltaBetaReciprocalCanvas->SetGrid();
@@ -392,7 +406,7 @@ void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, 
     {
         const double beta = betaMin + i * step;
         particle.setBeta(beta);
-        const std::pair<double, double> deltaBetaReciprocal = this->distributionOfReconstructionUsingLinearMethod(particle, 10000, false);
+        const std::pair<double, double> deltaBetaReciprocal = this->distributionOfReconstruction(particle, 10000, enableLinearMethod, false);
         graphErrors->SetPoint(i, beta, deltaBetaReciprocal.first);
         graphErrors->SetPointError(i, 0, deltaBetaReciprocal.second);
     }
@@ -414,14 +428,52 @@ double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const
         propagationLengths.push_back(std::get<1>(hit));
     }
 
-    return this->reconstructUsingNonLinearMethod(this->detect(hitTimes), propagationLengths);
+    return this->reconstructUsingNonLinearMethod(particle, this->detect(hitTimes), propagationLengths);
 }
 
-double Detector::reconstructUsingNonLinearMethod(const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const
+double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const
 {
-    const double initialBetaReciprocal = 1 / 0.5; // initial guess
+    const double initialBetaReciprocal = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
 
-    // Coming soon...
+    auto chi2Function = [&](const double *parameters)
+    {
+        particle.setBeta(1 / parameters[0]);
 
-    return 0;
+        std::vector<std::tuple<double, double, TVector3>> reconstructedHitData = this->particleHitData(particle, true);
+        std::vector<double> reconstructedHitTimes;
+        reconstructedHitTimes.reserve(reconstructedHitData.size());
+
+        for (const auto &hit : reconstructedHitData)
+            reconstructedHitTimes.push_back(std::get<0>(hit));
+
+        double chi2 = 0;
+        for (size_t i = 0; i < detectedTimes.size(); ++i)
+        {
+            double timeDiff = reconstructedHitTimes.at(i) - detectedTimes.at(i);
+            double timeResolution = this->getScintillatorCounters().at(i).getTimeResolution();
+            chi2 += TMath::Power(timeDiff, 2) / TMath::Power(timeResolution, 2);
+        }
+        return chi2;
+    };
+
+    ROOT::Math::Minimizer *minimizer = ROOT::Math::Factory::CreateMinimizer("Minuit2", "Migrad");
+
+    ROOT::Math::Functor functor(chi2Function, 1);
+    minimizer->SetFunction(functor);
+
+    minimizer->SetLimitedVariable(0, "betaReciprocal", initialBetaReciprocal, 1e-5, 1, 10);
+
+#if configEnableDebug
+    minimizer->SetPrintLevel(1);
+#endif
+
+    minimizer->Minimize();
+    const double betaReciprocal = minimizer->X()[0];
+
+#if configEnableDebug
+    printf("[Info] The reconstructed 1/beta using the linear method: %f\n", initialBetaReciprocal);
+    printf("[Info] The reconstructed 1/beta using the non-linear method: %f\n", betaReciprocal);
+#endif
+
+    return betaReciprocal;
 }

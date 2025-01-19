@@ -16,15 +16,8 @@
 #include "Particle.h"
 #include "Detector.h"
 
-void test(int argc, char *argv[]);
-
 int main(int argc, char *argv[])
 {
-#if configEnableTest
-    test(argc, argv);
-    return 0;
-#endif
-
     gROOT->SetStyle("Pub");
 
 /* BEGIN Material properties */
@@ -66,29 +59,8 @@ int main(int argc, char *argv[])
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
     /* END Particle properties */
 
-    // plot the energy loss of Li6 in EJ-200 scintillator counters
-    EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "result/energyLoss.png");
-
-    std::vector<std::tuple<double, double, TVector3>> hitDataWithEnergyLoss = TOF.particleHitData(Li6, true);
-    std::vector<std::tuple<double, double, TVector3>> hitDataWithoutEnergyLoss = TOF.particleHitData(Li6, false);
-
-    TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "result/deltaTime.png");
-
-    // std::vector<double> hitTimes, propagationLengths;
-
-    // hitTimes.reserve(hitDataWithEnergyLoss.size()), propagationLengths.reserve(hitDataWithEnergyLoss.size());
-    // for (const auto &hitData : hitDataWithEnergyLoss)
-    // {
-
-    //     hitTimes.push_back(std::get<0>(hitData));
-    //     propagationLengths.push_back(std::get<1>(hitData));
-    // }
-
-    TOF.plotReconstructDataUsingLinearMethod(Li6, "result/reconstructData.png");
-
-    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "result/distributionOfReconstruction.png");
-
-    TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, "result/deltaBetaReciprocal.png");
+    TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
+    TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
 
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());
@@ -96,52 +68,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
-#if configEnableTest
-
-void test(int argc, char *argv[])
-{
-    /* BEGIN Material properties */
-    const Material copper(materials.at(MaterialName::Copper)); // Copper material
-    /* END Material properties */
-
-    /* BEGIN Material properties 2 */
-    const Material polystyrene(materials.at(MaterialName::Polystyrene)); // Polystyrene material
-    /* END Material properties 2 */
-
-    /* BEGIN Particle properties */
-    constexpr double chargeElectron = -1;            // Charge in e
-    constexpr double mass0Electron = 0.5109989461;   // Rest mass in MeV/c^2
-    const TVector3 startMomentumElectron(0, 0, 1e3); // Initial momentum in MeV/c
-    const TVector3 startPositionElectron(0, 0, 0);   // Initial position in cm
-
-    Particle electron(chargeElectron, mass0Electron, startMomentumElectron, startPositionElectron); // Positive muon
-    /* END Particle properties */
-
-    /* BEGIN Particle properties 2 */
-    constexpr double chargeLi6 = 3;               // Charge in e
-    constexpr double u = 931.49410372;            // Atomic mass unit in MeV/c^2 (from https://en.wikipedia.org/wiki/Dalton_(unit))
-    constexpr double mass0Li6 = 6.0151228874 * u; // Rest mass in MeV/c^2
-    const TVector3 startMomentumLi6(0, 0, 1e3);   // Initial momentum in MeV/c
-    const TVector3 startPositionLi6(0, 0, 0);     // Initial position in cm
-
-    Particle Li6(chargeLi6, mass0Li6, startMomentumLi6, startPositionLi6); // Positive muon
-    /* END Particle properties 2 */
-
-    TCanvas *c1 = new TCanvas("c1", "", 3508, 2480); // A4 size in pixels(300 dpi)
-    TGraph *graph = new TGraph();
-    graph->SetTitle("Li6 on Polystyrene;#beta#gamma;Mass Stopping Power [MeV cm^{2}/g]");
-    c1->SetLogx();
-
-    for (int i = 0; i <= 1000; ++i)
-    {
-        double betaGamma = TMath::Power(10, -1 + 4 * i / 1000.);
-        Li6.setBetaGamma(betaGamma);
-        graph->SetPoint(i, Li6.getBeta() * Li6.getGamma(), polystyrene.massStoppingPower(Li6));
-    }
-
-    graph->Draw("AL");
-    c1->SaveAs("test.png");
-}
-
-#endif
