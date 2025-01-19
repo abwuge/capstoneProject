@@ -67,12 +67,12 @@ int main(int argc, char *argv[])
     /* END Particle properties */
 
     // plot the energy loss of Li6 in EJ-200 scintillator counters
-    EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
+    EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "result/energyLoss.png");
 
     std::vector<std::tuple<double, double, TVector3>> hitDataWithEnergyLoss = TOF.particleHitData(Li6, true);
     std::vector<std::tuple<double, double, TVector3>> hitDataWithoutEnergyLoss = TOF.particleHitData(Li6, false);
 
-    TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "test/deltaTime.png");
+    TOF.plotDeltaTime(hitDataWithEnergyLoss, hitDataWithoutEnergyLoss, "result/deltaTime.png");
 
     // std::vector<double> hitTimes, propagationLengths;
 
@@ -84,11 +84,11 @@ int main(int argc, char *argv[])
     //     propagationLengths.push_back(std::get<1>(hitData));
     // }
 
-    TOF.plotReconstructDataUsingLinearMethod(Li6, "test/reconstructData.png");
+    TOF.plotReconstructDataUsingLinearMethod(Li6, "result/reconstructData.png");
 
-    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "test/distributionOfReconstruction.png");
+    TOF.distributionOfReconstructionUsingLinearMethod(Li6, 10000, true, "result/distributionOfReconstruction.png");
 
-    TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, "test/deltaBetaReciprocal.png");
+    TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, "result/deltaBetaReciprocal.png");
 
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());
