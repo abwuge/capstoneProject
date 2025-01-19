@@ -83,7 +83,11 @@ std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Part
             particle.setPosition(hitPosition);
             if (enableEnergyLoss)
             {
+#if configUseBetheBloch
                 const double particleEnergyLoss = scintillatorCounter.energyLoss(particle);
+#else
+                const double particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(particle);
+#endif
                 particle.setEnergy(particle.getEnergy() - particleEnergyLoss);
 #if configEnableDebug
                 printf("[Info] Energy loss: %f MeV, Energy: %f MeV, Velocity: %f c\n", particleEnergyLoss, particle.getEnergy(), particle.getVelocity().Mag());

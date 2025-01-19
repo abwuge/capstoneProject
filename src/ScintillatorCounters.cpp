@@ -39,7 +39,11 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
     {
         const double betaGamma = TMath::Power(10, minExponent + i * step);
         particle.setBetaGamma(betaGamma);
+#if configUseBetheBloch
         const double energyLoss = this->energyLoss(particle);
+#else
+        const double energyLoss = this->LandauMostProbableEnergyLoss(particle);
+#endif
         yMax = TMath::Max(yMax, energyLoss);
 
         const double beta = particle.getBeta();

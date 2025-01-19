@@ -17,5 +17,7 @@
 
 // influence related
 #define configEnableTimeResolution 1
+#define configUseBetheBloch 0
+#define configEnableEnergyLossFluctuation 0
 
 #endif /* CONFIG_H */
