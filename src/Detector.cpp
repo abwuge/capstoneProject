@@ -4,6 +4,7 @@
 #include <thread>
 
 #include <TMath.h>
+#include <TH1F.h>
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TLegend.h>
@@ -15,14 +16,6 @@
 #include <Math/Minimizer.h>
 #include <Math/Factory.h>
 #include <Math/Functor.h>
-
-// Infact, we can use TRandom3 *Detector::Random = new TRandom3(configEnableFixedSeed); to implement the following code
-// But the following code is more readable
-#if configEnableFixedSeed
-TRandom3 *Detector::Random = new TRandom3(1); // Fixed seed 1
-#else
-TRandom3 *Detector::Random = new TRandom3(0); // 0 means time-based seed
-#endif
 
 Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B)
     : scintillatorCounters(scintillatorCounters), B(B)
@@ -54,7 +47,7 @@ TVector3 Detector::particleCyclotronDirection(const Particle &particle) const
     return momentumUnit.Cross(BUint) * chargeSign;
 }
 
-std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Particle particle, const bool enableEnergyLoss) const
+std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Particle particle, const bool enableEnergyLoss, const bool enableEnergyLossFluctuation) const
 {
     std::vector<std::tuple<double, double, TVector3>> hitData;
     hitData.reserve(this->scintillatorCounters.size());
@@ -70,9 +63,11 @@ std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Part
         {
             const double z0 = particle.getPosition().Z();
             const double vz = particle.getVelocity().Z() * conversionFactor; // velocity in cm/ns
-            if (vz <= 0)
+            if (vz <= 1e-10)
             {
-                printf("Cannot hit any more scintillator counters! The particle is moving in the opposite direction!\n");
+#if configEnableWarning
+                printf("[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or negative!\n");
+#endif
                 break;
             }
             const double z = scintillatorCounter.getLocation();
@@ -86,7 +81,19 @@ std::vector<std::tuple<double, double, TVector3>> Detector::particleHitData(Part
 #if configUseBetheBloch
                 const double particleEnergyLoss = scintillatorCounter.energyLoss(particle);
 #else
+#if configEnableEnergyLossFluctuation
+                double particleEnergyLoss;
+                if (enableEnergyLossFluctuation)
+                {
+                    const double Landau_xi = scintillatorCounter.LandauMostProbableEnergyLoss_xi(particle);
+                    const double mostProbableEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(Landau_xi, particle);
+                    particleEnergyLoss = Config::Random->Landau(mostProbableEnergyLoss, 4.018 * Landau_xi);
+                }
+                else
+                    particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(particle);
+#else
                 const double particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(particle);
+#endif
 #endif
                 particle.setEnergy(particle.getEnergy() - particleEnergyLoss);
 #if configEnableDebug
@@ -158,7 +165,7 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
         catch (const std::out_of_range &e)
         {
 #if configEnableWarning
-            printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hit scintillator counters!\n", i);
+            printf("[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting the hitted scintillator counters!\n", i);
 #endif
             break;
         }
@@ -199,7 +206,7 @@ std::vector<double> Detector::detect(const Particle &particle) const
     {
         const double hitTime = std::get<0>(hitData.at(i));
 #if configEnableTimeResolution
-        detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
+        detectedTimes.push_back(Config::Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
 #else
         detectedTimes.push_back(hitTime);
 #endif
@@ -217,7 +224,7 @@ std::vector<double> Detector::detect(const std::vector<double> &hitTimes) const
     {
         const double hitTime = hitTimes.at(i);
 #if configEnableTimeResolution
-        detectedTimes.push_back(this->Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
+        detectedTimes.push_back(Config::Random->Gaus(hitTime, this->scintillatorCounters.at(i).getTimeResolution()));
 #else
         detectedTimes.push_back(hitTime);
 #endif
@@ -328,10 +335,20 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
     Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
 }
 
-void Detector::processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, TH1F *histogram) const
+void Detector::processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, std::vector<double> &results, int index) const
 {
     const std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true);
     const int n = hitData.size();
+
+    if (n != this->scintillatorCounters.size())
+    {
+#if configEnableWarning
+        printf("[Warning] Cancel reconstruction No.%d since the particle has not hit all the scintillator counters!\n", index);
+#endif
+        results[index] = std::nan("");
+        return;
+    }
+
     std::vector<double> hitTimes, propagationLengths;
     hitTimes.reserve(n), propagationLengths.reserve(n);
 
@@ -347,23 +364,87 @@ void Detector::processReconstruction(const Particle &particle, const bool enable
     else
         betaReciprocalReconstruction = this->reconstructUsingNonLinearMethod(particle, this->detect(hitTimes), propagationLengths);
 
-    histogram->Fill(betaReciprocalReal - betaReciprocalReconstruction);
+    results[index] = betaReciprocalReal - betaReciprocalReconstruction;
 }
 
 std::pair<double, double> Detector::distributionOfReconstruction(const Particle &particle, const int nReconstructions, const bool enableLinerMethod, const bool enablePlot, const std::string &fileName) const
 {
     const double betaReciprocalReal = 1 / particle.getBeta();
 
-    TH1F *histogram = new TH1F("#Delta(1/#beta)", ";#Delta(1/#beta);", 100, -0.1, 0.1);
+    std::vector<double> results(nReconstructions, 0);
 
+#if configEnableMultiThreading && configEnableMultiThreadingAnywhere
     std::vector<std::future<void>> futures;
     futures.reserve(nReconstructions);
     for (int i = 0; i < nReconstructions; ++i)
-        futures.push_back(ThreadPool::getInstance().enqueue([this, &particle, enableLinerMethod, betaReciprocalReal, histogram]()
-                                                            { this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, histogram); }));
+        futures.push_back(ThreadPool::getInstance().enqueue([this, &particle, enableLinerMethod, betaReciprocalReal, &results, i]()
+                                                            { this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, results, i); }));
 
     for (auto &future : futures)
         future.get();
+#else
+    for (int i = 0; i < nReconstructions; ++i)
+        this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, results, i);
+#endif
+
+    double deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation;
+    {
+        std::vector<std::tuple<double, double, TVector3>> hitData = this->particleHitData(particle, true, false);
+        int n = hitData.size();
+
+        if (n != this->scintillatorCounters.size())
+        {
+#if configEnableWarning
+            printf("[Warning] Cannot reconstruct 1 / beta with zero resolution and zero energy loss fluctuation since the particle has not hit all the scintillator counters at beta = %f!\n", particle.getBeta());
+#endif
+            printf("[Info] Try to find the minimum beta of the particle that can hit all the scintillator counters ...\n");
+            double betaMin = particle.getBeta(), betaMax = 0.99;
+            Particle particleTemp(particle);
+            while (abs(betaMax - betaMin) > 1e-3)
+            {
+                double beta = (betaMin + betaMax) / 2;
+                particleTemp.setBeta(beta);
+                hitData = this->particleHitData(particleTemp, true, false);
+                n = hitData.size();
+                if (n == this->scintillatorCounters.size())
+                    betaMax = beta;
+                else
+                    betaMin = beta;
+            }
+            if (betaMax >= 0.988)
+            {
+                printf("[Error] The minimum beta is too close to 1! The particle cannot hit all the scintillator counters!\n");
+                exit(1);
+            }
+            else
+                printf("[Info] The minimum beta of the particle that can hit all the scintillator counters: %f\n", betaMax);
+#if configEnableWarning
+            printf("[Warning] Use %f as the beta of the particle to reconstruct the 1 / beta with zero resolution and zero energy loss fluctuation!\n", betaMax);
+#endif
+        }
+        else
+        {
+            std::vector<double> hitTimes, propagationLengths;
+            hitTimes.reserve(n), propagationLengths.reserve(n);
+
+            for (const auto &hit : hitData)
+            {
+                hitTimes.push_back(std::get<0>(hit));
+                propagationLengths.push_back(std::get<1>(hit));
+            }
+
+            if (enableLinerMethod)
+                deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
+            else
+                deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation = betaReciprocalReal - this->reconstructUsingNonLinearMethod(particle, this->detect(hitTimes), propagationLengths);
+        }
+    }
+
+    TH1F *histogram = new TH1F("#Delta(1/#beta)", ";#Delta(1/#beta);", 1000,
+                               deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - 1, deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation + 1);
+    for (const auto &result : results)
+        if (!std::isnan(result))
+            histogram->Fill(result);
 
     TCanvas *Detector_plotDistributionOfReconstructionCanvas;
     if (enablePlot)
@@ -371,19 +452,24 @@ std::pair<double, double> Detector::distributionOfReconstruction(const Particle 
         Detector_plotDistributionOfReconstructionCanvas = new TCanvas("Detector_plotDistributionOfReconstructionCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
         Detector_plotDistributionOfReconstructionCanvas->cd();
 
-        histogram->Draw();
-
         TFitResultPtr fitResult = histogram->Fit("gaus", "QS");
+        histogram->GetFunction("gaus")->SetNpx(1000);
 
         double mean = fitResult->Value(1), sigma = fitResult->Value(2);
 
-        // TLine *line = new TLine(deltaBetaReciprocalWithZeroResolution, 0, deltaBetaReciprocalWithZeroResolution, histogram->GetMaximum());
-        // line->Draw("same");
+        histogram->GetXaxis()->SetRangeUser(mean - 5 * sigma, mean + 5 * sigma);
 
-        TLegend *legend = new TLegend(0.6, 0.75, 0.85, 0.85);
+        histogram->Draw();
+
+        TLine *line = new TLine(deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation, 0,
+                                deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation, histogram->GetMaximum());
+        line->Draw("same");
+
+        TLegend *legend = new TLegend(0.2, 0.75, 0.45, 0.85);
         legend->SetBorderSize(kNone);
-        legend->SetHeader(Form("#mu = %.3f, #sigma = %.3f", mean, sigma), "C");
-        // legend->AddEntry(line, Form("#Delta(1/#beta)_{real} = %.3f", deltaBetaReciprocalWithZeroResolution), "l");
+        legend->SetHeader(Form("#mu: %.3f, #sigma: %.3f", mean, sigma), "C");
+        legend->AddEntry("", Form("Entries: %d", (int)histogram->GetEntries()), "");
+        legend->AddEntry(line, Form("#Delta(1/#beta)_{real} = %.3f", deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation), "l");
         legend->Draw();
 
 #if configEnableDebug
@@ -392,12 +478,12 @@ std::pair<double, double> Detector::distributionOfReconstruction(const Particle 
 #endif
 
         Detector_plotDistributionOfReconstructionCanvas->SaveAs(fileName.c_str());
+        delete Detector_plotDistributionOfReconstructionCanvas;
     }
 
     std::pair<double, double> meanAndStandardDeviation = {histogram->GetMean(), histogram->GetRMS()};
 
     delete histogram;
-    delete Detector_plotDistributionOfReconstructionCanvas;
 
     return meanAndStandardDeviation;
 }
@@ -412,11 +498,38 @@ void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, 
     graphErrors->SetTitle(";#beta;#Delta(1/#beta)");
 
     const double step = (betaMax - betaMin) / nPoints;
+
+    std::vector<std::pair<double, double>> deltaBetaReciprocals;
+    deltaBetaReciprocals.reserve(nPoints + 1);
+
+#if configEnableMultiThreading
+    std::vector<std::future<std::pair<double, double>>> futures;
+    futures.reserve(nPoints + 1);
     for (int i = 0; i <= nPoints; ++i)
     {
         const double beta = betaMin + i * step;
         particle.setBeta(beta);
-        const std::pair<double, double> deltaBetaReciprocal = this->distributionOfReconstruction(particle, 10000, enableLinearMethod, false);
+
+        futures.push_back(ThreadPool::getInstance().enqueue([this, particle, enableLinearMethod]() -> std::pair<double, double>
+                                                            { return this->distributionOfReconstruction(particle, 10000, enableLinearMethod, false); }));
+    }
+
+    for (auto &future : futures)
+        deltaBetaReciprocals.push_back(future.get());
+#else
+    for (int i = 0; i <= nPoints; ++i)
+    {
+        const double beta = betaMin + i * step;
+        particle.setBeta(beta);
+
+        deltaBetaReciprocals.push_back(this->distributionOfReconstruction(particle, 10000, enableLinearMethod, false));
+    }
+#endif
+
+    for (int i = 0; i <= nPoints; ++i)
+    {
+        std::pair<double, double> &deltaBetaReciprocal = deltaBetaReciprocals.at(i);
+        const double beta = betaMin + i * step;
         graphErrors->SetPoint(i, beta, deltaBetaReciprocal.first);
         graphErrors->SetPointError(i, 0, deltaBetaReciprocal.second);
     }
@@ -449,7 +562,16 @@ double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::v
     {
         particle.setBeta(1 / parameters[0]);
 
-        std::vector<std::tuple<double, double, TVector3>> reconstructedHitData = this->particleHitData(particle, true);
+        std::vector<std::tuple<double, double, TVector3>> reconstructedHitData = this->particleHitData(particle, true, false);
+
+        if (reconstructedHitData.size() != this->getScintillatorCounters().size())
+        {
+#if configEnableWarningAll
+            printf("[Warning] [@Reconstruction] The particle has not hit all the scintillator counters as beta = %f!\n", 1 / parameters[0]);
+#endif
+            return 1e10;
+        }
+
         std::vector<double> reconstructedHitTimes;
         reconstructedHitTimes.reserve(reconstructedHitData.size());
 

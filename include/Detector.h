@@ -17,9 +17,8 @@
 
 #include <TVector3.h>
 #include <TRandom3.h>
-#include <TH1F.h>
 
-#include "config.h"
+#include "Config.h"
 #include "ThreadPool.h"
 #include "Particle.h"
 #include "ScintillatorCounters.h"
@@ -27,13 +26,20 @@
 class Detector
 {
 private:
-    static TRandom3 *Random;                                // Random number generator
     std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
     TVector3 B;                                             // Magnetic field
 
     /* BEGIN Methods */
 
-    void processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, TH1F *histogram) const;
+    /**
+     * @brief Process the reconstruction of the particle
+     * @param particle Incident particle
+     * @param enableLinerMethod Enable the linear method
+     * @param betaReciprocalReal Real 1/beta of the particle
+     * @param results Results of the reconstruction
+     * @param index Index of the result
+     */
+    void processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, std::vector<double> &results, int index) const;
 
     /* END Methods */
 
@@ -90,9 +96,10 @@ public:
      * @brief Calculate the hit times and positions of the particle in this detector
      * @param particle Incident particle
      * @param enableEnergyLoss Enable energy loss in the scintillator counters
+     * @param enableEnergyLossFluctuation Enable energy loss fluctuation in the scintillator counters (NOTE! This can be effective OLNY when enableEnergyLoss is true and configEnableEnergyLossFluctuation is true)
      * @return Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector
      */
-    std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true) const;
+    std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true, const bool enableEnergyLossFluctuation = true) const;
 
     /**
      * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss

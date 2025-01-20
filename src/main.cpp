@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <thread>
 #include <tuple>
 #include <vector>
@@ -11,7 +12,7 @@
 #include <TAxis.h>
 #include <TLegend.h>
 
-#include "config.h"
+#include "Config.h"
 #include "ThreadPool.h"
 #include "Material.h"
 #include "ScintillatorCounters.h"
@@ -21,13 +22,16 @@
 int main(int argc, char *argv[])
 {
     gROOT->SetStyle("Pub");
+
+#if configEnableMultiThreading
     ROOT::EnableThreadSafety();
     ROOT::EnableImplicitMT();
 
     if (argc > 1)
-        ThreadPool::getInstance(std::stoi(argv[1]));
+        ThreadPool::getInstance(std::min(std::thread::hardware_concurrency(), (unsigned int)std::stoi(argv[1])));
     else
-        ThreadPool::getInstance(std::thread::hardware_concurrency());
+        ThreadPool::getInstance(std::max(std::thread::hardware_concurrency() - 2, 1u));
+#endif
 
 /* BEGIN Material properties */
 #if configTodo // IDK some porperties of polyvinyltoluene, so I used polystyrene to test the code
@@ -62,14 +66,20 @@ int main(int argc, char *argv[])
     constexpr double uIn_kg = 1.66053906660e-27;                                 // Atomic mass unit in kg (from https://www.bipm.org/documents/20126/41483022/SI-Brochure-9.pdf)
     constexpr double u = uIn_kg * TMath::C() * TMath::C() / (1e6 * TMath::Qe()); // Atomic mass unit in MeV/c^2
     constexpr double mass0 = 6.01512289 * u;                                     // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
-    constexpr double startBeta = 0.7;                                            // Initial beta of Li6
+    constexpr double startBeta = 0.4;                                            // Initial beta of Li6
     const TVector3 startPosition(0, 0, TOF.getMinZ());                           // Initial position of Li6 in cm
 
     Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
     /* END Particle properties */
 
-    TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
-    TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
+    // EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
+    // EJ_200.at(0).plotEnergyLossFluctuation(Li6, 100000, true, "test/energyLossFluctuation.png");
+
+    // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
+    // TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
+
+    // TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, true, "test/plotDeltaBetaReciprocal_linearMethod.png");
+    TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, false, "test/plotDeltaBetaReciprocal_nonLinearMethod.png");
 
 #if configEnableDebug
     printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());

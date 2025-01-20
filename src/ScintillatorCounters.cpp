@@ -5,6 +5,9 @@
 #include <TGraph.h>
 #include <TAxis.h>
 #include <TLegend.h>
+#include <TF1.h>
+#include <TLine.h>
+#include <TMath.h>
 
 ScintillatorCounters::ScintillatorCounters(const double location, const bool direction, const double thickness, const double timeResolution, const Material &material)
     : location(location), direction(direction), thickness(thickness), timeResolution(timeResolution), material(material) {}
@@ -106,4 +109,55 @@ double ScintillatorCounters::LandauMostProbableEnergyLoss(const Particle &partic
     const double partB = xi / I;
 
     return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->material.delta(beta, gamma));
+}
+
+double ScintillatorCounters::LandauMostProbableEnergyLoss(const double xi, const Particle &particle) const
+{
+    constexpr double massElectron = 0.51099895000; // Rest mass of the electron in MeV/c^2
+    constexpr double j = 0.200;                    // Constant for the Landau most probable energy loss
+    const double I = this->material.getI() * 1e-6; // convert eV to MeV
+    const double beta = particle.getBeta();
+    const double gamma = particle.getGamma();
+
+    const double partA = 2 * massElectron * beta * beta * gamma * gamma / I;
+    const double partB = xi / I;
+
+    return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->material.delta(beta, gamma));
+}
+
+void ScintillatorCounters::plotEnergyLossFluctuation(Particle particle, const int nPoints, const bool enableKineticEnergy, const std::string &fileName) const
+{
+    TCanvas *ScintillatorCounters_plotEnergyLossFluctuationCanvas = new TCanvas("ScintillatorCounters_plotEnergyLossFluctuationCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->SetGrid();
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->cd();
+
+    const double xi = this->LandauMostProbableEnergyLoss_xi(particle);
+    const double mostProbableEnergyLoss = this->LandauMostProbableEnergyLoss(xi, particle);
+    const double sigma = 4.018 * xi;
+
+    const double kineticEnergy = particle.getEnergy() - particle.getMass0();
+
+    TF1 *landau;
+    if (enableKineticEnergy)
+        landau = new TF1("landau", "TMath::Landau(x, [0], [1])", mostProbableEnergyLoss - 3.5 * sigma, TMath::Max(mostProbableEnergyLoss + 20 * sigma, kineticEnergy + sigma));
+    else
+        landau = new TF1("landau", "TMath::Landau(x, [0], [1])", mostProbableEnergyLoss - 3.5 * sigma, mostProbableEnergyLoss + 20 * sigma);
+    landau->SetParameters(mostProbableEnergyLoss, sigma);
+    landau->SetTitle(";#DeltaE [MeV];");
+
+    landau->Draw();
+
+    TLegend *legend = new TLegend(0.65, 0.75, 0.85, 0.85);
+    legend->SetBorderSize(kNone);
+    legend->SetHeader(Form("#Deltap = %.3f, #sigma = %.3f", mostProbableEnergyLoss, sigma), "C");
+    TLine *kineticEnergyLine = new TLine(particle.getEnergy() - particle.getMass0(), 0, particle.getEnergy() - particle.getMass0(), 1);
+    if (enableKineticEnergy)
+    {
+        legend->AddEntry(kineticEnergyLine, "Kinetic energy", "l");
+        kineticEnergyLine->Draw("same");
+    }
+
+    legend->Draw();
+
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->SaveAs(fileName.c_str());
 }

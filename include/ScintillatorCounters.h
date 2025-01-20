@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "config.h"
+#include "Config.h"
 #include "Material.h"
 #include "Particle.h"
 
@@ -96,6 +96,25 @@ public:
      * @return Most probable energy loss of the particle in the scintillator counter in MeV
      */
     double LandauMostProbableEnergyLoss(const Particle &particle) const;
+
+    /**
+     * @brief Calculate the most probable energy loss of the particle in the scintillator counter
+     * @param xi xi for the Landau energy loss distribution in MeV
+     * @param particle Particle
+     * @return Most probable energy loss of the particle in the scintillator counter in MeV
+     */
+    double LandauMostProbableEnergyLoss(const double xi, const Particle &particle) const;
+
+    /**
+     * @brief Plot the energy loss fluctuation of the particle in the scintillator counter using the Landau distribution
+     *
+     * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in TCanvas! Otherwise, you may get a blank plot with your TCanvas!
+     * @param particle Particle
+     * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
+     * @param enableKineticEnergy Enable kinetic energy in the plot
+     * @param fileName Name of the file to save the plot
+     */
+    void plotEnergyLossFluctuation(Particle particle, const int nPoints = 10000, const bool enableKineticEnergy = true, const std::string &fileName = "test.png") const;
 
     /* END Methods */
 };

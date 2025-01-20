@@ -7,7 +7,7 @@ SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 CXX := g++
-CXXFLAGS := -I$(INC_DIR) `root-config --cflags` -O3 -flto
+CXXFLAGS := -I$(INC_DIR) `root-config --cflags` -O3 -flto=auto
 LDFLAGS := `root-config --libs` -lvdt
 
 $(NAME): $(OBJS)

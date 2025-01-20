@@ -3,7 +3,7 @@
 
 #include <unordered_map>
 
-#include "config.h"
+#include "Config.h"
 #include "Particle.h"
 
 /**

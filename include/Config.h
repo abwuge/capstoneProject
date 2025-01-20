@@ -5,7 +5,8 @@
 #define configEnableFixedSeed 1
 
 // notice related
-#define configEnableWarning 1
+#define configEnableWarning 0
+#define configEnableWarningAll 0
 
 // test related
 #define configEnableTest 0
@@ -18,6 +19,17 @@
 // influence related
 #define configEnableTimeResolution 1
 #define configUseBetheBloch 0
-#define configEnableEnergyLossFluctuation 0
+#define configEnableEnergyLossFluctuation 1
+
+// multi-threading related
+#define configEnableMultiThreading 0
+#define configEnableMultiThreadingAnywhere 0
+
+#include <TRandom3.h>
+class Config
+{
+public:
+    static TRandom3 *Random;
+};
 
 #endif /* CONFIG_H */

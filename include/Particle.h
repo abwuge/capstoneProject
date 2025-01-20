@@ -5,7 +5,7 @@
 
 #include <TVector3.h>
 
-#include "config.h"
+#include "Config.h"
 
 class Particle
 {
