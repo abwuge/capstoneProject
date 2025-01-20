@@ -26,3 +26,8 @@ debug: $(NAME)
 .PHONY: clean
 clean:
 	rm -fv $(OBJS) $(NAME)
+
+.PHONY: ASan
+ASan: CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -g
+ASan: LDFLAGS += -fsanitize=address
+ASan: $(NAME)

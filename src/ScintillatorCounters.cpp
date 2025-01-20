@@ -80,6 +80,12 @@ void ScintillatorCounters::plotEnergyLoss(Particle particle, const double betaGa
     }
     ScintillatorCounters_plotEnergyLossCanvas->SaveAs(fileName.c_str());
 
+    delete legend;
+    delete graphKineticEnergy;
+    delete graphEnergyLoss;
+    delete mg;
+    delete ScintillatorCounters_plotEnergyLossCanvas;
+
     return;
 }
 
@@ -160,4 +166,9 @@ void ScintillatorCounters::plotEnergyLossFluctuation(Particle particle, const in
     legend->Draw();
 
     ScintillatorCounters_plotEnergyLossFluctuationCanvas->SaveAs(fileName.c_str());
+
+    delete kineticEnergyLine;
+    delete legend;
+    delete landau;
+    delete ScintillatorCounters_plotEnergyLossFluctuationCanvas;
 }

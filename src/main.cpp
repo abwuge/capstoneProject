@@ -75,6 +75,8 @@ int main(int argc, char *argv[])
     // EJ_200.at(0).plotEnergyLoss(Li6, 0.1, 1000, 1000, true, "test/energyLoss.png");
     // EJ_200.at(0).plotEnergyLossFluctuation(Li6, 100000, true, "test/energyLossFluctuation.png");
 
+    // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
+
     // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
     // TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
 

@@ -194,6 +194,9 @@ void Detector::plotDeltaTime(const std::vector<std::tuple<double, double, TVecto
             Detector_plotDeltaTimeCanvas->SaveAs(TString::Format("%s_zoom_2.png", fileName.c_str()));
         }
     }
+
+    delete graph;
+    delete Detector_plotDeltaTimeCanvas;
 }
 
 std::vector<double> Detector::detect(const Particle &particle) const
@@ -333,6 +336,12 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 #endif
 
     Detector_plotReconstructDataCanvas->SaveAs(fileName.c_str());
+
+    delete graphRealData;
+    delete graphReconstructData;
+    delete f1;
+    delete legend;
+    delete Detector_plotReconstructDataCanvas;
 }
 
 void Detector::processReconstruction(const Particle &particle, const bool enableLinerMethod, const double betaReciprocalReal, std::vector<double> &results, int index) const
@@ -436,7 +445,7 @@ std::pair<double, double> Detector::distributionOfReconstruction(const Particle 
             if (enableLinerMethod)
                 deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation = betaReciprocalReal - this->reconstructUsingLinearMethod(hitTimes, propagationLengths);
             else
-                deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation = betaReciprocalReal - this->reconstructUsingNonLinearMethod(particle, this->detect(hitTimes), propagationLengths);
+                deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation = betaReciprocalReal - this->reconstructUsingNonLinearMethod(particle, hitTimes, propagationLengths);
         }
     }
 
@@ -457,7 +466,7 @@ std::pair<double, double> Detector::distributionOfReconstruction(const Particle 
 
         double mean = fitResult->Value(1), sigma = fitResult->Value(2);
 
-        histogram->GetXaxis()->SetRangeUser(mean - 5 * sigma, mean + 5 * sigma);
+        histogram->GetXaxis()->SetRangeUser(std::max(mean - 5 * sigma, histogram->GetXaxis()->GetXmin()), std::min(mean + 5 * sigma, histogram->GetXaxis()->GetXmax()));
 
         histogram->Draw();
 
@@ -478,6 +487,9 @@ std::pair<double, double> Detector::distributionOfReconstruction(const Particle 
 #endif
 
         Detector_plotDistributionOfReconstructionCanvas->SaveAs(fileName.c_str());
+
+        delete line;
+        delete legend;
         delete Detector_plotDistributionOfReconstructionCanvas;
     }
 
@@ -537,6 +549,9 @@ void Detector::plotDeltaBetaReciprocal(Particle particle, const double betaMin, 
     graphErrors->Draw("AL");
 
     Detector_plotDeltaBetaReciprocalCanvas->SaveAs(fileName.c_str());
+
+    delete graphErrors;
+    delete Detector_plotDeltaBetaReciprocalCanvas;
 }
 
 double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const
@@ -556,7 +571,7 @@ double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const
 
 double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const
 {
-    const double initialBetaReciprocal = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
+    double initialBetaReciprocal = this->reconstructUsingLinearMethod(detectedTimes, propagationLengths);
 
     auto chi2Function = [&](const double *parameters)
     {
@@ -569,7 +584,7 @@ double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::v
 #if configEnableWarningAll
             printf("[Warning] [@Reconstruction] The particle has not hit all the scintillator counters as beta = %f!\n", 1 / parameters[0]);
 #endif
-            return 1e10;
+            return 1e10 * parameters[0];
         }
 
         std::vector<double> reconstructedHitTimes;
@@ -593,6 +608,7 @@ double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::v
     ROOT::Math::Functor functor(chi2Function, 1);
     minimizer->SetFunction(functor);
 
+    initialBetaReciprocal = std::clamp(initialBetaReciprocal, 1 + 1e-5, 10 - 1e-5); // restrict the range of betaReciprocal between 1 and 10
     minimizer->SetLimitedVariable(0, "betaReciprocal", initialBetaReciprocal, 1e-5, 1, 10);
 
 #if configEnableDebug
@@ -606,6 +622,8 @@ double Detector::reconstructUsingNonLinearMethod(Particle particle, const std::v
     printf("[Info] The reconstructed 1/beta using the linear method: %f\n", initialBetaReciprocal);
     printf("[Info] The reconstructed 1/beta using the non-linear method: %f\n", betaReciprocal);
 #endif
+
+    delete minimizer;
 
     return betaReciprocal;
 }
