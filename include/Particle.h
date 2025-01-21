@@ -9,7 +9,7 @@
 
 class Particle
 {
-private:
+protected:
     double charge; // Charge of the particle in e
     double mass0;  // Rest mass of the particle in MeV/c^2
     double mass;   // Mass of the particle in MeV/c^2
@@ -23,6 +23,13 @@ private:
 
 public:
     /* BEGIN Constructor & Destructor */
+
+    /**
+     * @brief Constructor
+     * 
+     * The default constructor sets every member to zero, do NOT use it if you do not know what you are doing!
+     */
+    Particle();
 
     /**
      * @brief Constructor

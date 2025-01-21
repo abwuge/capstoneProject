@@ -25,7 +25,7 @@
 
 class Detector
 {
-private:
+protected:
     std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
     TVector3 B;                                             // Magnetic field
 
@@ -99,7 +99,7 @@ public:
      * @param enableEnergyLossFluctuation Enable energy loss fluctuation in the scintillator counters (NOTE! This can be effective OLNY when enableEnergyLoss is true and configEnableEnergyLossFluctuation is true)
      * @return Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector
      */
-    std::vector<std::tuple<double, double, TVector3>> particleHitData(Particle particle, const bool enableEnergyLoss = true, const bool enableEnergyLossFluctuation = true) const;
+    std::vector<std::tuple<double, double, TVector3>> *particleHitData(const Particle &particleOrignal, const bool enableEnergyLoss = true, const bool enableEnergyLossFluctuation = true) const;
 
     /**
      * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss
@@ -118,7 +118,7 @@ public:
      * @param hitDataWithoutEnergyLoss Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector without energy loss
      * @param fileName Name of the file to save the plot
      */
-    void plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName = "test.png") const;
+void plotDeltaTime(const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss, const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss, const std::string &fileName = "test.png") const;
 
     /**
      * @brief Detect the particle
@@ -127,14 +127,14 @@ public:
      * @param particle Incident particle
      * @return Detected times of the particle in the scintillator counters
      */
-    std::vector<double> detect(const Particle &particle) const;
+    std::vector<double> *detect(const Particle &particle) const;
 
     /**
      * @brief Detect the particle
      * @param hitTimes Hit times of the particle
      * @return Detected times of the particle in the scintillator counters
      */
-    std::vector<double> detect(const std::vector<double> &hitTimes) const;
+    std::vector<double> *detect(const std::vector<double> &hitTimes) const;
 
     /**
      * @brief Reconstruct the particle's beta using the linear method
@@ -194,7 +194,7 @@ public:
      * @param propagationLengths Propagation lengths of the particle in this decetor
      * @return Reconstructed 1/beta of the particle
      */
-    double reconstructUsingNonLinearMethod(Particle particle, const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const;
+    double reconstructUsingNonLinearMethod(const Particle &particleOrignal, const std::vector<double> &detectedTimes, const std::vector<double> &propagationLengths) const;
 
     /* END Methods */
 };

@@ -20,7 +20,7 @@ enum class MaterialName
 
 class Material
 {
-private:
+protected:
     double density;      // Density of the material in g/cm^3
     double Z;            // Atomic number of the material
     double A;            // Atomic mass of the material in g/mol

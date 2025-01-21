@@ -2,6 +2,10 @@
 
 #include <TMath.h>
 
+Particle::Particle()
+    : charge(0), mass0(0), mass(0), energy(0), gamma(0), beta(0),
+      position(TVector3(0, 0, 0)), momentum(TVector3(0, 0, 0)), velocity(TVector3(0, 0, 0)) {}
+
 Particle::Particle(const double charge, const double mass0, const TVector3 &momentum, const TVector3 &position)
     : charge(charge), mass0(mass0), momentum(momentum), position(position)
 {

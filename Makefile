@@ -31,3 +31,8 @@ clean:
 ASan: CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer -g
 ASan: LDFLAGS += -fsanitize=address
 ASan: $(NAME)
+
+.PHONY: gprof
+gprof: CXXFLAGS += -pg
+gprof: LDFLAGS += -pg
+gprof: $(NAME)

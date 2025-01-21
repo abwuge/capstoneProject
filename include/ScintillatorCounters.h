@@ -9,7 +9,7 @@
 
 class ScintillatorCounters
 {
-private:
+protected:
     double location;       // z-coordinate of the scintillator counter in cm (assuming it is an infinite plane in the x and y directions)
     bool direction;        // Indicates whether the detector detects x (true) or y (false) coordinates
     double thickness;      // Thickness of the scintillator counter in cm

@@ -22,7 +22,7 @@
 #define configEnableEnergyLossFluctuation 1
 
 // multi-threading related
-#define configEnableMultiThreading 0
+#define configEnableMultiThreading 1
 #define configEnableMultiThreadingAnywhere 0
 
 #include <TRandom3.h>

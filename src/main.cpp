@@ -25,12 +25,13 @@ int main(int argc, char *argv[])
 
 #if configEnableMultiThreading
     ROOT::EnableThreadSafety();
-    ROOT::EnableImplicitMT();
 
     if (argc > 1)
         ThreadPool::getInstance(std::min(std::thread::hardware_concurrency(), (unsigned int)std::stoi(argv[1])));
     else
         ThreadPool::getInstance(std::max(std::thread::hardware_concurrency() - 2, 1u));
+    
+    printf("[Info] Number of threads: %lu\n", ThreadPool::getInstance().getNumThreads());
 #endif
 
 /* BEGIN Material properties */
@@ -58,6 +59,8 @@ int main(int argc, char *argv[])
     const TVector3 B(0, 0, 0); // used for testing
 
     const Detector TOF(EJ_200, B); // Time-of-flight detector in AMS-02
+    Detector TOF2(EJ_200, B);
+    TOF2 = TOF;
     /* END Detector properties */
 
     /* BEGIN Particle properties */
