@@ -1,35 +1,48 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-// random related
-#define configEnableFixedSeed 1
-
-// notice related
-#define configEnableWarning 0
-#define configEnableWarningAll 0
-
-// test related
-#define configEnableTest 0
-#define configEnableDebug 0
-#define configEnableDebugAtCoding 1
-
-// todo related
-#define configTodo 1
-
-// influence related
-#define configEnableTimeResolution 1
-#define configUseBetheBloch 0
-#define configEnableEnergyLossFluctuation 1
-
-// multi-threading related
-#define configEnableMultiThreading 1
-#define configEnableMultiThreadingAnywhere 0
-
 #include <TRandom3.h>
-class Config
-{
+class Config {
 public:
-    static TRandom3 *Random;
+  static inline Config   *config = nullptr;                // Instance of the Config class
+  static inline TRandom3 *random = nullptr;                // random number generator
+
+  static inline bool enableFixedSeed = true;               // Enable fixed seed for random number generator
+
+  static inline bool enableWarning    = false;             // Enable warning
+  static inline bool enableWarningAll = false;             // Enable warning for all
+
+  static inline bool enableTest          = false;          // Enable test
+  static inline bool enableDebug         = false;          // Enable debug
+  static inline bool enableDebugAtCoding = true;           // Enable debug at coding
+
+  static inline bool todo = true;                          // Enable todo
+
+  static inline bool enableTimeResolution        = true;   // Enable time resolution
+  static inline bool useBetheBloch               = false;  // Use Bethe-Bloch formula
+  static inline bool enableEnergyLossFluctuation = true;   // Enable energy loss fluctuation
+
+  static inline bool enableMultiThreading         = true;  // Enable multi-threading
+  static inline bool enableMultiThreadingAnywhere = false; // Enable multi-threading anywhere
+
+  /**
+   * @brief Get the instance of the Config class
+   */
+  static inline Config *getInstance();
+
+  /**
+   * @brief Get the random number generator
+   */
+  static inline TRandom3 *getRandom();
+
+protected:
+  inline Config();
+
+  Config(const Config &) = delete;
+
+  Config &operator=(const Config &) = delete;
 };
+
+#include "Config.inl"
 
 #endif /* CONFIG_H */

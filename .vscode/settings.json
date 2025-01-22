@@ -1,5 +1,6 @@
 {
     "makefile.configureOnOpen": false,
+    "editor.formatOnSave": false,
     "files.associations": {
         "allocator": "cpp",
         "array": "cpp",

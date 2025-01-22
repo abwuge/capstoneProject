@@ -1,0 +1,60 @@
+BasedOnStyle: LLVM
+AlignAfterOpenBracket: BlockIndent
+AlignArrayOfStructures: Right
+
+# prettier-ignore
+AlignConsecutiveAssignments:
+  Enabled:          true
+  AlignCompound:    true
+  PadOperators:     true
+
+# prettier-ignore
+AlignConsecutiveBitFields:
+  Enabled:          true
+  AlignCompound:    true
+  PadOperators:     true
+
+# prettier-ignore
+AlignConsecutiveDeclarations:
+  Enabled:          true
+  AlignCompound:    true
+  PadOperators:     true
+
+# prettier-ignore
+AlignConsecutiveMacros:
+  Enabled:          true
+  AlignCompound:    true
+  PadOperators:     true
+
+# prettier-ignore
+AlignConsecutiveShortCaseStatements:
+  Enabled:          true
+  AlignCaseColons:  true
+
+AlignOperands: AlignAfterOperator
+
+# prettier-ignore
+AlignTrailingComments:
+  Kind:           Always
+  OverEmptyLines: 1
+
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowBreakBeforeNoexceptSpecifier: OnlyWithParen
+AllowShortBlocksOnASingleLine: Always
+AllowShortCompoundRequirementOnASingleLine: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: OnlyFirstIf
+AllowShortLoopsOnASingleLine: true
+AllowShortNamespacesOnASingleLine: true
+AlwaysBreakBeforeMultilineStrings: true
+BinPackArguments: false
+BinPackParameters: false
+BitFieldColonSpacing: After
+BreakBeforeBinaryOperators: NonAssignment
+BreakBeforeBraces: Custom
+ColumnLimit: 120
+
+# prettier-ignore
+BraceWrapping:
+  BeforeLambdaBody: false
