@@ -4,26 +4,25 @@
 #include <TRandom3.h>
 class Config {
 public:
-  static inline Config   *config = nullptr;                // Instance of the Config class
-  static inline TRandom3 *random = nullptr;                // random number generator
+  static inline Config   *config = nullptr;               // Instance of the Config class
+  static inline TRandom3 *random = nullptr;               // random number generator
 
-  static inline bool enableFixedSeed = true;               // Enable fixed seed for random number generator
+  static inline bool enableFixedSeed = true;              // Enable fixed seed for random number generator
 
-  static inline bool enableWarning    = false;             // Enable warning
-  static inline bool enableWarningAll = false;             // Enable warning for all
+  static inline bool enableWarning    = false;            // Enable warning
+  static inline bool enableWarningAll = false;            // Enable warning for all
 
-  static inline bool enableTest          = false;          // Enable test
-  static inline bool enableDebug         = false;          // Enable debug
-  static inline bool enableDebugAtCoding = true;           // Enable debug at coding
+  static inline bool enableTest          = false;         // Enable test
+  static inline bool enableDebug         = false;         // Enable debug
+  static inline bool enableDebugAtCoding = true;          // Enable debug at coding
 
-  static inline bool todo = true;                          // Enable todo
+  static inline bool todo = true;                         // Enable todo
 
-  static inline bool enableTimeResolution        = true;   // Enable time resolution
-  static inline bool useBetheBloch               = false;  // Use Bethe-Bloch formula
-  static inline bool enableEnergyLossFluctuation = true;   // Enable energy loss fluctuation
+  static inline bool enableTimeResolution        = true;  // Enable time resolution
+  static inline bool useBetheBloch               = false; // Use Bethe-Bloch formula
+  static inline bool enableEnergyLossFluctuation = true;  // Enable energy loss fluctuation
 
-  static inline bool enableMultiThreading         = true;  // Enable multi-threading
-  static inline bool enableMultiThreadingAnywhere = false; // Enable multi-threading anywhere
+  static inline bool enableMultiThreading = true;         // Enable multi-threading
 
   /**
    * @brief Get the instance of the Config class

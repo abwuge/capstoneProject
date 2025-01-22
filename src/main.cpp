@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     if (argc > 1)
       ThreadPool::getInstance(std::min(std::thread::hardware_concurrency(), (unsigned int)std::stoi(argv[1])));
     else
-      ThreadPool::getInstance(std::max(std::thread::hardware_concurrency() / 2, 4u));
+      ThreadPool::getInstance(std::thread::hardware_concurrency());
 
     printf("[Info] Number of threads: %lu\n", ThreadPool::getInstance().getNumThreads());
   }
@@ -92,7 +92,7 @@ int main(int argc, char *argv[]) {
   // TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
 
   // TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, true, "test/plotDeltaBetaReciprocal_linearMethod.png");
-  TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 5, false, "test/plotDeltaBetaReciprocal_nonLinearMethod.png");
+  TOF.plotDeltaBetaReciprocal(Li6, 0.4, 0.9, 20, false, "test/plotDeltaBetaReciprocal_nonLinearMethod.png");
 
   if (Config::enableDebug) printf("[Info] The real 1 / beta: %f\n", 1 / Li6.getBeta());
 

@@ -24,7 +24,7 @@ public:
   }
 };
 
-class MemoryPool {
+class alignas(64) MemoryPool {
 protected:
   static thread_local TF1                   *Detector_reconstructUsingLinearMethod_f1;
   static thread_local Particle              *Detector_particleHitData_particle;

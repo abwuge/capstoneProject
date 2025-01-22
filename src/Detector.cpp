@@ -373,20 +373,8 @@ std::pair<double, double> Detector::distributionOfReconstruction(
 
   std::vector<double> results(nReconstructions, 0);
 
-  if (Config::enableMultiThreading && Config::enableMultiThreadingAnywhere) {
-    std::vector<std::future<void>> futures;
-    futures.reserve(nReconstructions);
-    for (int i = 0; i < nReconstructions; ++i)
-      futures.push_back(
-          ThreadPool::getInstance().enqueue([this, &particle, enableLinerMethod, betaReciprocalReal, &results, i]() {
-            this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, results, i);
-          })
-      );
-
-    for (auto &future : futures) future.get();
-  } else
-    for (int i = 0; i < nReconstructions; ++i)
-      this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, results, i);
+  for (int i = 0; i < nReconstructions; ++i)
+    this->processReconstruction(particle, enableLinerMethod, betaReciprocalReal, results, i);
 
   double deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation;
   {
