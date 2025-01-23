@@ -10,7 +10,6 @@
 #include <TF1.h>
 #include <TFitResult.h>
 #include <TGraph.h>
-#include <TGraphErrors.h>
 #include <TH1F.h>
 #include <TLegend.h>
 #include <TLine.h>
@@ -69,7 +68,7 @@ std::vector<std::tuple<double, double, TVector3>> *Detector::particleHitData(
       const double z0 = particle->getPosition().Z();
       const double vz = particle->getVelocity().Z() * conversionFactor; // velocity in cm/ns
 
-      if (vz <= 1e-10) {
+      if (vz <= 0) {
         if (Config::enableWarning)
           printf(
               "[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or "
@@ -97,7 +96,11 @@ std::vector<std::tuple<double, double, TVector3>> *Detector::particleHitData(
             const double mostProbableEnergyLoss =
                 scintillatorCounter.LandauMostProbableEnergyLoss(Landau_xi, *particle);
 
-            particleEnergyLoss = Config::random->Landau(mostProbableEnergyLoss, 4.018 * Landau_xi);
+            if (Config::useLandau)
+              particleEnergyLoss = Config::random->Landau(mostProbableEnergyLoss, 4.018 * Landau_xi);
+            else
+              particleEnergyLoss = Config::random->Gaus(mostProbableEnergyLoss, 4.018 * Landau_xi);
+
           } else
             particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(*particle);
         else
@@ -440,8 +443,8 @@ std::pair<double, double> Detector::distributionOfReconstruction(
       "#Delta(1/#beta)",
       ";#Delta(1/#beta);",
       1000,
-      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - 1,
-      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation + 1
+      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - .1,
+      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation + .1
   );
   for (const auto &result : results)
     if (!std::isnan(result)) histogram->Fill(result);
@@ -472,13 +475,15 @@ std::pair<double, double> Detector::distributionOfReconstruction(
     );
     line->Draw("same");
 
-    TLegend *legend = new TLegend(0.2, 0.75, 0.45, 0.85);
+    TLegend *legend = new TLegend(0.62, 0.67, 0.87, 0.87);
     legend->SetBorderSize(kNone);
-    legend->SetHeader(Form("#mu: %.3f, #sigma: %.3f", mean, sigma), "C");
+    legend->AddEntry("", Form("#chi^{2} / NDF = %.4g / %u", fitResult->Chi2(), fitResult->Ndf()), "");
+    legend->AddEntry("", Form("#mu = %.4g", mean), "");
+    legend->AddEntry("", Form("#sigma = %.4g", sigma), "");
     legend->AddEntry("", Form("Entries: %d", (int)histogram->GetEntries()), "");
     legend->AddEntry(
         line,
-        Form("#Delta(1/#beta)_{real} = %.3f", deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation),
+        Form("#Delta(1/#beta)_{real} = %.4g", deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation),
         "l"
     );
     legend->Draw();
@@ -506,18 +511,22 @@ std::pair<double, double> Detector::distributionOfReconstruction(
   return meanAndStandardDeviation;
 }
 
-void Detector::plotDeltaBetaReciprocal(
+TGraphErrors *Detector::deltaBetaReciprocal(
     Particle           particle,
     const double       betaMin,
     const double       betaMax,
     const int          nPoints,
     const bool         enableLinearMethod,
+    const bool         enablePlot,
     const std::string &fileName
 ) const {
-  TCanvas *Detector_plotDeltaBetaReciprocalCanvas =
-      new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-  Detector_plotDeltaBetaReciprocalCanvas->SetGrid();
-  Detector_plotDeltaBetaReciprocalCanvas->cd();
+  TCanvas *Detector_plotDeltaBetaReciprocalCanvas;
+  if (enablePlot) {
+    Detector_plotDeltaBetaReciprocalCanvas =
+        new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    Detector_plotDeltaBetaReciprocalCanvas->SetGrid();
+    Detector_plotDeltaBetaReciprocalCanvas->cd();
+  }
 
   TGraphErrors *graphErrors = new TGraphErrors(nPoints + 1);
   graphErrors->SetTitle(";#beta;#Delta(1/#beta)");
@@ -557,12 +566,14 @@ void Detector::plotDeltaBetaReciprocal(
     graphErrors->SetPointError(i, 0, deltaBetaReciprocal.second);
   }
 
-  graphErrors->Draw("AL");
+  if (enablePlot) {
+    graphErrors->Draw("AL");
+    Detector_plotDeltaBetaReciprocalCanvas->SaveAs(fileName.c_str());
 
-  Detector_plotDeltaBetaReciprocalCanvas->SaveAs(fileName.c_str());
+    delete Detector_plotDeltaBetaReciprocalCanvas;
+  }
 
-  delete graphErrors;
-  delete Detector_plotDeltaBetaReciprocalCanvas;
+  return graphErrors;
 }
 
 double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const {

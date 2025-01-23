@@ -6,7 +6,7 @@
             "command": "/usr/bin/bash",
             "args": [
                 "-c",
-                "/usr/bin/g++ -fdiagnostics-color=always -O3 -march=native -flto=auto -I${workspaceFolder}/include $(root-config --cflags) -g -o ${workspaceFolder}/bin/output ${workspaceFolder}/src/*.cpp $(root-config --libs) -lvdt"
+                "/usr/bin/g++ -fdiagnostics-color=always -O3 -flto=auto -I${workspaceFolder}/include $(root-config --cflags) -g -o ${workspaceFolder}/bin/output ${workspaceFolder}/src/*.cpp $(root-config --libs) -lvdt"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

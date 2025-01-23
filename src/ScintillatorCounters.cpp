@@ -7,7 +7,6 @@
 #include <TLegend.h>
 #include <TLine.h>
 #include <TMath.h>
-#include <TMultiGraph.h>
 
 ScintillatorCounters::ScintillatorCounters(
     const double    location,
@@ -25,26 +24,33 @@ double ScintillatorCounters::energyLoss(const Particle &particle) const {
   return this->material.linearStoppingPower(particle) * this->thickness;
 }
 
-void ScintillatorCounters::plotEnergyLoss(
+TMultiGraph *ScintillatorCounters::energyLoss(
     Particle           particle,
     const double       betaGammaMin,
     const double       betaGammaMax,
     const int          nPoints,
     const bool         enableKineticEnergy,
+    const bool         enablePlot,
     const std::string &fileName
 ) const {
-  TCanvas *ScintillatorCounters_plotEnergyLossCanvas =
-      new TCanvas("ScintillatorCounters_plotEnergyLossCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-  ScintillatorCounters_plotEnergyLossCanvas->SetGrid();
-  ScintillatorCounters_plotEnergyLossCanvas->cd();
+  TCanvas *ScintillatorCounters_plotEnergyLossCanvas;
+  if (enablePlot) {
+    ScintillatorCounters_plotEnergyLossCanvas =
+        new TCanvas("ScintillatorCounters_plotEnergyLossCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+    ScintillatorCounters_plotEnergyLossCanvas->SetGrid();
+    ScintillatorCounters_plotEnergyLossCanvas->cd();
+  }
 
   TMultiGraph *mg = new TMultiGraph();
 
   TGraph *graphEnergyLoss = new TGraph(nPoints + 1);
   graphEnergyLoss->SetLineColor(kBlue);
 
-  TGraph *graphKineticEnergy = new TGraph(nPoints + 1);
-  graphKineticEnergy->SetLineColor(kRed);
+  TGraph *graphKineticEnergy;
+  if (enableKineticEnergy) {
+    graphKineticEnergy = new TGraph(nPoints + 1);
+    graphKineticEnergy->SetLineColor(kRed);
+  }
 
   const double minExponent = TMath::Log10(betaGammaMin);
   const double maxExponent = TMath::Log10(betaGammaMax);
@@ -70,55 +76,53 @@ void ScintillatorCounters::plotEnergyLoss(
   mg->Add(graphEnergyLoss);
   if (enableKineticEnergy) mg->Add(graphKineticEnergy);
 
-  if (enableKineticEnergy) mg->SetTitle(";#beta;#DeltaE or E_{k} [MeV]");
-  else
-    mg->SetTitle(";#beta;#DeltaE [MeV]");
+  if (enablePlot) {
+    if (enableKineticEnergy) mg->SetTitle(";#beta;#DeltaE or E_{k} [MeV]");
+    else
+      mg->SetTitle(";#beta;#DeltaE [MeV]");
 
-  mg->GetYaxis()->SetRangeUser(0, yMax);
+    mg->GetYaxis()->SetRangeUser(0, yMax);
 
-  // QUESTION: When I put the definition of TCanvas here, the x-axis of the plot is not form betaGammaMin to
-  // betaGammaMax. Why?
+    mg->Draw("AL");
 
-  mg->Draw("AL");
+    TLegend *legend = new TLegend(0.65, 0.75, 0.85, 0.85);
+    legend->SetBorderSize(kNone);
+    if (enableKineticEnergy) {
+      legend->AddEntry(graphEnergyLoss, "#DeltaE (Energy loss)", "l");
+      legend->AddEntry(graphKineticEnergy, "E_{k} (Kinetic energy)", "l");
+      legend->Draw();
+    }
+    ScintillatorCounters_plotEnergyLossCanvas->SaveAs(fileName.c_str());
 
-  TLegend *legend = new TLegend(0.65, 0.75, 0.85, 0.85);
-  legend->SetBorderSize(kNone);
-  if (enableKineticEnergy) {
-    legend->AddEntry(graphEnergyLoss, "#DeltaE (Energy loss)", "l");
-    legend->AddEntry(graphKineticEnergy, "E_{k} (Kinetic energy)", "l");
-    legend->Draw();
+    delete legend;
+    delete ScintillatorCounters_plotEnergyLossCanvas;
   }
-  ScintillatorCounters_plotEnergyLossCanvas->SaveAs(fileName.c_str());
 
-  delete legend;
-  delete graphKineticEnergy;
-  delete graphEnergyLoss;
-  delete mg;
-  delete ScintillatorCounters_plotEnergyLossCanvas;
-
-  return;
+  return mg;
 }
 
 double ScintillatorCounters::LandauMostProbableEnergyLoss_xi(const Particle &particle) const {
+  double beta = particle.getBeta();
+  if (beta < 1e-10) return 0;
   constexpr double K = 0.307075; // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for dE/dx)
   const double     z = particle.getCharge(
   ); // charge number of the particle (since we use charge in units of e, the charge number is the same as the charge)
-  const double x    = this->thickness * this->material.getDensity(); // x in g/cm^2
-  const double Z    = this->material.getZ();
-  const double A    = this->material.getA();
-  const double beta = particle.getBeta();
+  const double x = this->thickness * this->material.getDensity(); // x in g/cm^2
+  const double Z = this->material.getZ();
+  const double A = this->material.getA();
 
   return (K / 2) * (Z / A) * (z * z) * (x / (beta * beta));
 }
 
 double ScintillatorCounters::LandauMostProbableEnergyLoss(const Particle &particle) const {
+  const double xi = this->LandauMostProbableEnergyLoss_xi(particle);
+  if (xi == 0) return 0;
+
   constexpr double massElectron = 0.51099895000;                // Rest mass of the electron in MeV/c^2
   constexpr double j            = 0.200;                        // Constant for the Landau most probable energy loss
   const double     I            = this->material.getI() * 1e-6; // convert eV to MeV
   const double     beta         = particle.getBeta();
   const double     gamma        = particle.getGamma();
-
-  const double xi = this->LandauMostProbableEnergyLoss_xi(particle);
 
   const double partA = 2 * massElectron * beta * beta * gamma * gamma / I;
   const double partB = xi / I;
@@ -127,6 +131,8 @@ double ScintillatorCounters::LandauMostProbableEnergyLoss(const Particle &partic
 }
 
 double ScintillatorCounters::LandauMostProbableEnergyLoss(const double xi, const Particle &particle) const {
+  if (xi == 0) return 0;
+
   constexpr double massElectron = 0.51099895000;                // Rest mass of the electron in MeV/c^2
   constexpr double j            = 0.200;                        // Constant for the Landau most probable energy loss
   const double     I            = this->material.getI() * 1e-6; // convert eV to MeV
@@ -143,13 +149,9 @@ void ScintillatorCounters::plotEnergyLossFluctuation(
     Particle           particle,
     const int          nPoints,
     const bool         enableKineticEnergy,
+    TPad              *pad,
     const std::string &fileName
 ) const {
-  TCanvas *ScintillatorCounters_plotEnergyLossFluctuationCanvas =
-      new TCanvas("ScintillatorCounters_plotEnergyLossFluctuationCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
-  ScintillatorCounters_plotEnergyLossFluctuationCanvas->SetGrid();
-  ScintillatorCounters_plotEnergyLossFluctuationCanvas->cd();
-
   const double xi                     = this->LandauMostProbableEnergyLoss_xi(particle);
   const double mostProbableEnergyLoss = this->LandauMostProbableEnergyLoss(xi, particle);
   const double sigma                  = 4.018 * xi;
@@ -157,28 +159,54 @@ void ScintillatorCounters::plotEnergyLossFluctuation(
   const double kineticEnergy = particle.getEnergy() - particle.getMass0();
 
   TF1 *landau;
-  if (enableKineticEnergy)
-    landau = new TF1(
-        "landau",
-        "TMath::Landau(x, [0], [1])",
-        mostProbableEnergyLoss - 3.5 * sigma,
-        TMath::Max(mostProbableEnergyLoss + 20 * sigma, kineticEnergy + sigma)
-    );
-  else
-    landau = new TF1(
-        "landau",
-        "TMath::Landau(x, [0], [1])",
-        mostProbableEnergyLoss - 3.5 * sigma,
-        mostProbableEnergyLoss + 20 * sigma
-    );
-  landau->SetParameters(mostProbableEnergyLoss, sigma);
-  landau->SetTitle(";#DeltaE [MeV];");
+  if (xi) {
+    if (enableKineticEnergy)
+      landau = new TF1(
+          "landau",
+          "TMath::Landau(x, [0], [1])",
+          mostProbableEnergyLoss - 3.5 * sigma,
+          TMath::Max(mostProbableEnergyLoss + 20 * sigma, kineticEnergy + sigma)
+      );
+    else
+      landau = new TF1(
+          "landau",
+          "TMath::Landau(x, [0], [1])",
+          mostProbableEnergyLoss - 3.5 * sigma,
+          mostProbableEnergyLoss + 20 * sigma
+      );
+    landau->SetParameters(mostProbableEnergyLoss, sigma);
+  } else if (enableKineticEnergy) {
+    landau = new TF1("landau", "[0]", -100, kineticEnergy + 100);
+    landau->SetParameter(0, 0);
+  } else {
+    if (Config::enableWarning) {
+      printf("[Warning] The most probable energy loss is 0! So, the Landau distribution is not plotted!\n");
+      return;
+    }
+  }
 
+  TCanvas *ScintillatorCounters_plotEnergyLossFluctuationCanvas;
+  if (!pad) {
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas = new TCanvas(
+        "ScintillatorCounters_plotEnergyLossFluctuationCanvas",
+        "",
+        3508,
+        2480
+    ); // A4 size in pixels(300 dpi)
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->SetGrid();
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->cd();
+  } else {
+    pad->SetGrid();
+    pad->cd();
+  }
+
+  landau->SetTitle(";#DeltaE [MeV];");
   landau->Draw();
 
-  TLegend *legend = new TLegend(0.65, 0.75, 0.85, 0.85);
+  TLegend *legend = new TLegend(0.65, 0.7, 0.85, 0.85);
   legend->SetBorderSize(kNone);
-  legend->SetHeader(Form("#Deltap = %.3f, #sigma = %.3f", mostProbableEnergyLoss, sigma), "C");
+  legend->AddEntry("", Form("#Delta_{p} = %.4g", mostProbableEnergyLoss), "");
+  legend->AddEntry("", Form("#sigma = %.4g", sigma), "");
   TLine *kineticEnergyLine =
       new TLine(particle.getEnergy() - particle.getMass0(), 0, particle.getEnergy() - particle.getMass0(), 1);
   if (enableKineticEnergy) {
@@ -188,10 +216,11 @@ void ScintillatorCounters::plotEnergyLossFluctuation(
 
   legend->Draw();
 
-  ScintillatorCounters_plotEnergyLossFluctuationCanvas->SaveAs(fileName.c_str());
-
-  delete kineticEnergyLine;
-  delete legend;
-  delete landau;
-  delete ScintillatorCounters_plotEnergyLossFluctuationCanvas;
+  if (!pad) {
+    ScintillatorCounters_plotEnergyLossFluctuationCanvas->SaveAs(fileName.c_str());
+    delete kineticEnergyLine;
+    delete legend;
+    delete landau;
+    delete ScintillatorCounters_plotEnergyLossFluctuationCanvas;
+  }
 }

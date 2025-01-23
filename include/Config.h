@@ -9,18 +9,19 @@ public:
 
   static inline bool enableFixedSeed = true;              // Enable fixed seed for random number generator
 
-  static inline bool enableWarning    = false;            // Enable warning
-  static inline bool enableWarningAll = false;            // Enable warning for all
-
   static inline bool enableTest          = false;         // Enable test
   static inline bool enableDebug         = false;         // Enable debug
-  static inline bool enableDebugAtCoding = true;          // Enable debug at coding
+
+  static inline bool enableWarning        = false;        // Enable warning
+  static inline bool enableWarningAll     = false;        // Enable warning for all
+  static inline bool enableWarningAtDebug = true;         // Enable warning at debug
 
   static inline bool todo = true;                         // Enable todo
 
   static inline bool enableTimeResolution        = true;  // Enable time resolution
   static inline bool useBetheBloch               = false; // Use Bethe-Bloch formula
   static inline bool enableEnergyLossFluctuation = true;  // Enable energy loss fluctuation
+  static inline bool useLandau                   = true;  // Use Landau distribution
 
   static inline bool enableMultiThreading = true;         // Enable multi-threading
 

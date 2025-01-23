@@ -5,8 +5,11 @@
             "name": "C/C++: g++ 运行项目",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/output",
-            "args": [],
+            "program": "/usr/bin/time",
+            "args": [
+                "-v",
+                "${workspaceFolder}/bin/output"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

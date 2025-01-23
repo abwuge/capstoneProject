@@ -15,6 +15,7 @@
 #include <utility>
 #include <vector>
 
+#include <TGraphErrors.h>
 #include <TRandom3.h>
 #include <TVector3.h>
 
@@ -204,13 +205,16 @@ public:
    * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
    * @param enableLinearMethod Enable reconstruction using the linear method
    * @param fileName Name of the file to save the plot
+   * @param enablePlot Enable plot
+   * @return Graph of the difference between real and reconstructed 1/beta of the particle
    */
-  void plotDeltaBetaReciprocal(
+  TGraphErrors *deltaBetaReciprocal(
       Particle           particle,
       const double       betaMin            = 0.4,
       const double       betaMax            = 0.9,
       const int          nPoints            = 5,
       const bool         enableLinearMethod = false,
+      const bool         enablePlot         = false,
       const std::string &fileName           = "test.png"
   ) const;
 

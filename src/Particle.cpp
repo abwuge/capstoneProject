@@ -46,6 +46,13 @@ Particle::Particle(
 Particle::~Particle() {}
 
 bool Particle::setMass(double mass) {
+  if (this->momentum.Mag() == 0) {
+    if (Config::enableWarning)
+      printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
+
+    this->momentum = TVector3(0, 0, 1);
+  }
+
   if (mass < this->mass0) {
     if (Config::enableWarning)
       printf("[Warning] Mass / Energy cannot be less than the rest mass! Mass / Energy is set to the rest mass!\n");
@@ -64,6 +71,13 @@ bool Particle::setMass(double mass) {
 }
 
 bool Particle::setBeta(double beta) {
+  if (this->velocity.Mag() == 0) {
+    if (Config::enableWarning)
+      printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
+
+    this->velocity = TVector3(0, 0, 1);
+  }
+
   if (beta < 0 || beta > 1) {
     if (Config::enableWarning) printf("[Warning] Beta must be between 0 and 1! Beta remains %f!\n", this->beta);
 
@@ -87,6 +101,13 @@ bool Particle::setBeta(double beta) {
 }
 
 bool Particle::setBetaGamma(double betaGamma) {
+  if (this->velocity.Mag() == 0) {
+    if (Config::enableWarning)
+      printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
+
+    this->momentum = TVector3(0, 0, 1);
+  }
+
   if (betaGamma < 0) {
     if (Config::enableWarning) printf("[Warning] Beta * gamma cannot be negative! Beta * gamma is set to 0!\n");
 

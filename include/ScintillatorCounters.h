@@ -3,6 +3,9 @@
 
 #include <string>
 
+#include <TMultiGraph.h>
+#include <TPad.h>
+
 #include "Config.h"
 #include "Material.h"
 #include "Particle.h"
@@ -87,14 +90,17 @@ public:
    * @param betaGammaMax Maximum beta * gamma of the particle
    * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
    * @param enableKineticEnergy Enable kinetic energy in the plot
+   * @param enablePlot Enable plot
    * @param fileName Name of the file to save the plot
+   * @return Graph of the energy loss of the particle in the scintillator counter
    */
-  void plotEnergyLoss(
+  TMultiGraph *energyLoss(
       Particle           particle,
-      const double       betaGammaMin        = 0.1,
-      const double       betaGammaMax        = 1000,
+      const double       betaGammaMin,
+      const double       betaGammaMax,
       const int          nPoints             = 1000,
       const bool         enableKineticEnergy = true,
+      const bool         enablePlot          = false,
       const std::string &fileName            = "test.png"
   ) const;
 
@@ -134,6 +140,7 @@ public:
       Particle           particle,
       const int          nPoints             = 10000,
       const bool         enableKineticEnergy = true,
+      TPad              *pad                 = nullptr,
       const std::string &fileName            = "test.png"
   ) const;
 
