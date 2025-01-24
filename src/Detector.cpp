@@ -249,14 +249,33 @@ double Detector::reconstructUsingLinearMethod(
     exit(1);
   }
 
-  TGraph *graph =
-      MemoryPool::getDetector_reconstructUsingLinearMethod_graph(n, &propagationLengths[0], &detectedTimes[0]);
-  TF1 *f1 = MemoryPool::getDetector_reconstructUsingLinearMethod_f1("f1", "[0] * x", 0, propagationLengths.back());
+  // Fit t = kL + b using least squares method
+  // we only need the slope k
+  // k = [n*sum(L*t) - sum(L)*sum(t)] / [n*sum(L^2) - (sum(L))^2]
+  double sumL  = 0.0; // sum(L)
+  double sumT  = 0.0; // sum(t)
+  double sumLT = 0.0; // sum(L*t)
+  double sumL2 = 0.0; // sum(L^2)
 
-  graph->Fit(f1, "Q");
+  for (int i = 0; i < n; ++i) {
+    const double L  = propagationLengths[i];
+    const double t  = detectedTimes[i];
+    sumL           += L;
+    sumT           += t;
+    sumLT          += L * t;
+    sumL2          += L * L;
+  }
+
+  const double denominator = n * sumL2 - sumL * sumL;
+  if (std::abs(denominator) < 1e-10) {
+    if (Config::enableWarning) printf("[Warning] The particle is too slow!");
+    return 0;
+  }
+
+  const double k = (n * sumLT - sumL * sumT) / denominator;
 
   constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
-  const double     betaReciprocal   = f1->GetParameter(0) * conversionFactor;
+  const double     betaReciprocal   = k * conversionFactor;
 
   if (Config::enableDebug) printf("[Info] The reconstructed 1/beta using the linear method: %f\n", betaReciprocal);
 
@@ -439,8 +458,9 @@ std::pair<double, double> Detector::distributionOfReconstruction(
           betaReciprocalReal - this->reconstructUsingNonLinearMethod(particle, hitTimes, propagationLengths);
   }
 
-  TH1F *histogram = new TH1F(
-      "#Delta(1/#beta)",
+  static int histCounter = 0;
+  TH1F      *histogram   = new TH1F(
+      Form("#Delta(1/#beta)_%d", histCounter++),
       ";#Delta(1/#beta);",
       1000,
       deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - 1,

@@ -20,6 +20,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 .PHONY: debug
 debug: CXXFLAGS += -g
+debug: LDFLAGS += -g
 debug: $(NAME)
 
 

@@ -24,9 +24,8 @@ int main(int argc, char *argv[]) {
   /* BEGIN Initialization */
   gROOT->SetStyle("Pub");
 
-  Config::enableFixedSeed = true;
-  Config::config          = Config::getInstance();
-  Config::random          = Config::getRandom();
+  Config::config = Config::getInstance();
+  Config::random = Config::getRandom();
 
   if (Config::enableMultiThreading) {
     ROOT::EnableThreadSafety();
@@ -220,7 +219,7 @@ int main(int argc, char *argv[]) {
   // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
 
   // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
-  if (true) {
+  if (false) {
     proton.setBeta(0.4);
     TOF.distributionOfReconstruction(
         proton,
@@ -232,7 +231,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Draw the difference between real and reconstructed 1/beta of the particle in this detectors
-  if (false) {
+  if (true) {
     TCanvas *canvas = new TCanvas("canvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
     canvas->SetGrid();
     canvas->cd();
@@ -243,12 +242,12 @@ int main(int argc, char *argv[]) {
     TLegend *legend = new TLegend(0.45, 0.2, 0.88, 0.32);
     legend->SetBorderSize(kNone);
 
-    const int       nPoints        = 5;
+    const int       nPoints        = 20;
     const Particle &detectParticle = proton;
 
     Config::useLandau = true;
     // Linear method (Landau Fluctuation)
-    if (false) {
+    if (true) {
       TGraphErrors *graphErrorsLinearMethodLandauFluctuation =
           TOF.deltaBetaReciprocal(detectParticle, 0.4, 0.9, nPoints, true);
       graphErrorsLinearMethodLandauFluctuation->SetLineColor(kBlue);
