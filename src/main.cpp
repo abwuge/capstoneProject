@@ -218,6 +218,8 @@ int main(int argc, char *argv[]) {
 
   // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
 
+  // TOF.plotReconstructDataUsingLinearMethod(Li6, "test/plotReconstructDataUsingLinearMethod.png");
+
   // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
   if (false) {
     proton.setBeta(0.4);
@@ -242,7 +244,7 @@ int main(int argc, char *argv[]) {
     TLegend *legend = new TLegend(0.45, 0.2, 0.88, 0.32);
     legend->SetBorderSize(kNone);
 
-    const int       nPoints        = 20;
+    const int       nPoints        = 100;
     const Particle &detectParticle = proton;
 
     Config::useLandau = true;

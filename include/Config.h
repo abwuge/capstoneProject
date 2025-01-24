@@ -23,6 +23,8 @@ public:
   static inline bool enableEnergyLossFluctuation = true;  // Enable energy loss fluctuation
   static inline bool useLandau                   = true;  // Use Landau distribution
   static inline bool enableEnergyLossDetection   = true;  // Enable energy loss detection
+  static inline bool useEnergyLoss2Rec           = true;  // use energy loss to reconstruct 1/ beta
+  static inline bool useRealEnergyLoss2Rec       = true; // Use real energy loss
 
   static inline bool enableMultiThreading = true;         // Enable multi-threading
 

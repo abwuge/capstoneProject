@@ -11,8 +11,6 @@
 #define DETECTOR_H
 
 #include <string>
-#include <tuple>
-#include <utility>
 #include <vector>
 
 #include <TGraphErrors.h>
@@ -20,35 +18,12 @@
 #include <TVector3.h>
 
 #include "Config.h"
+#include "HitsData.h"
 #include "Particle.h"
 #include "ScintillatorCounters.h"
 #include "ThreadPool.h"
 
 class Detector {
-protected:
-  std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
-  TVector3                          B;                    // Magnetic field
-
-  /* BEGIN Methods */
-
-  /**
-   * @brief Process the reconstruction of the particle
-   * @param particle Incident particle
-   * @param enableLinerMethod Enable the linear method
-   * @param betaReciprocalReal Real 1/beta of the particle
-   * @param results Results of the reconstruction
-   * @param index Index of the result
-   */
-  void processReconstruction(
-      const Particle      &particle,
-      const bool           enableLinerMethod,
-      const double         betaReciprocalReal,
-      std::vector<double> &results,
-      int                  index
-  ) const;
-
-  /* END Methods */
-
 public:
   /* BEGIN Constructor & Destructor */
 
@@ -102,21 +77,19 @@ public:
    * @brief Calculate the hit times and positions of the particle in this detector
    * @param particle Incident particle
    * @param enableEnergyLoss Enable energy loss in the scintillator counters
-   * @param enableEnergyLossFluctuation Enable energy loss fluctuation in the scintillator counters (NOTE! This can be
-   * effective OLNY when enableEnergyLoss is true and Config::enableEnergyLossFluctuation is true)
-   * @return Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the particle in this detector
+   * @param enableEnergyLossFluctuation Enable energy loss fluctuation in the scintillator counters
+   * (NOTE! This can be effective OLNY when enableEnergyLoss is true and Config::enableEnergyLossFluctuation is true)
+   * @return Hits data of the particle in this detector
    */
-  std::vector<std::tuple<double, double, TVector3>> *particleHitData(
+  HitsData *particleHitData(
       const Particle &particleOrignal,
       const bool      enableEnergyLoss            = true,
-      const bool      enableEnergyLossFluctuation = true
+      const bool      enableEnergyLossFluctuation = true,
+      const HitsData *measuresData                = nullptr
   ) const;
 
   /**
    * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss
-   *
-   * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in
-   * TCanvas! Otherwise, you may get a blank plot with your TCanvas!
    * @param particle Incident particle
    * @param fileName Name of the file to save the plot
    */
@@ -124,54 +97,43 @@ public:
 
   /**
    * @brief Plot the time difference between the hit times of the particle in this detector with and without energy loss
-   *
-   * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in
-   * TCanvas! Otherwise, you may get a blank plot with your TCanvas!
-   * @param hitDataWithEnergyLoss Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the
-   * particle in this detector with energy loss
-   * @param hitDataWithoutEnergyLoss Hit times (in ns), propagation lengths (in cm), and hit position (in cm) of the
-   * particle in this detector without energy loss
+   * @param hitDataWithEnergyLoss Hits data of the particle in this detector with energy loss
+   * @param hitDataWithoutEnergyLoss Hits data of the particle in this detector without energy loss
    * @param fileName Name of the file to save the plot
    */
   void plotDeltaTime(
-      const std::vector<std::tuple<double, double, TVector3>> &hitDataWithEnergyLoss,
-      const std::vector<std::tuple<double, double, TVector3>> &hitDataWithoutEnergyLoss,
-      const std::string                                       &fileName = "test.png"
+      const HitsData    &hitDataWithEnergyLoss,
+      const HitsData    &hitDataWithoutEnergyLoss,
+      const std::string &fileName = "test.png"
   ) const;
 
   /**
    * @brief Detect the particle
-   *
-   * For better performance, use hitTimes instead of particle
    * @param particle Incident particle
-   * @return Detected times of the particle in the scintillator counters
+   * @return Measures data of the particle in the scintillator counters
    */
-  std::vector<double> *detect(const Particle &particle) const;
+  inline HitsData *measure(const Particle &particle) const;
 
   /**
    * @brief Detect the particle
-   * @param hitTimes Hit times of the particle
-   * @return Detected times of the particle in the scintillator counters
+   * @param hitsData Hits data of the particle in this detector
+   * @return Measures data of the particle in the scintillator counters
    */
-  std::vector<double> *detect(const std::vector<double> &hitTimes) const;
+  HitsData *measure(const HitsData &hitsData) const;
 
   /**
    * @brief Reconstruct the particle's beta using the linear method
    * @param particle Incident particle
    * @return Reconstructed 1/beta of the particle
    */
-  double reconstructUsingLinearMethod(const Particle &particle) const;
+  inline double reconstructUsingLinearMethod(const Particle &particle) const;
 
   /**
    * @brief Reconstruct the particle's beta using the linear method
-   * @param detectedTimes Detected times of the particle in the scintillator counters
-   * @param propagationLengths Propagation lengths of the particle in this decetor
+   * @param measuresData Measures data of the particle in the scintillator counters
    * @return Reconstructed 1/beta of the particle
    */
-  double reconstructUsingLinearMethod(
-      const std::vector<double> &detectedTimes,
-      const std::vector<double> &propagationLengths
-  ) const;
+  double reconstructUsingLinearMethod(const HitsData &measuresData) const;
 
   /**
    * @brief Plot the reconstructed data of the particle in this detector
@@ -223,22 +185,21 @@ public:
    * @param particle Incident particle
    * @return Reconstructed 1/beta of the particle
    */
-  double reconstructUsingNonLinearMethod(const Particle &particle) const;
+  inline double reconstructUsingNonLinearMethod(const Particle &particle) const;
 
   /**
    * @brief Reconstruct the particle's beta using the non-linear method
    * @param particle Incident particle
-   * @param detectedTimes Detected times of the particle in the scintillator counters
-   * @param propagationLengths Propagation lengths of the particle in this decetor
+   * @param measuresData Measures data of the particle in the scintillator counters
    * @return Reconstructed 1/beta of the particle
    */
-  double reconstructUsingNonLinearMethod(
-      const Particle            &particleOrignal,
-      const std::vector<double> &detectedTimes,
-      const std::vector<double> &propagationLengths
-  ) const;
+  double reconstructUsingNonLinearMethod(const Particle &particleOrignal, const HitsData &measuresDataOrignal) const;
 
   /* END Methods */
+
+protected:
+  std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
+  TVector3                          B;                    // Magnetic field
 };
 
 inline double Detector::getMinZ() const { return this->scintillatorCounters.front().getLocation(); }
@@ -248,5 +209,19 @@ inline std::vector<ScintillatorCounters> Detector::getScintillatorCounters() con
 }
 
 inline TVector3 Detector::getB() const { return this->B; }
+
+inline HitsData *Detector::measure(const Particle &particle) const {
+  return this->measure(*this->particleHitData(particle, true));
+}
+
+inline double Detector::reconstructUsingLinearMethod(const Particle &particle) const {
+  const HitsData *hitsData = this->particleHitData(particle, true);
+  return this->reconstructUsingLinearMethod(*this->measure(*hitsData));
+}
+
+inline double Detector::reconstructUsingNonLinearMethod(const Particle &particle) const {
+  const HitsData *hitsData = this->particleHitData(particle, true);
+  return this->reconstructUsingNonLinearMethod(particle, *this->measure(*hitsData));
+}
 
 #endif /* DETECTOR_H */

@@ -1,53 +1,45 @@
 #ifndef MEMORYPOOL_H
 #define MEMORYPOOL_H
 
-#include <tuple>
-#include <vector>
-
 #include <Math/Factory.h>
 #include <Math/Minimizer.h>
-#include <TH1F.h>
-#include <TVector3.h>
 
+#include "HitsData.h"
 #include "Particle.h"
 
 class alignas(64) MemoryPool {
 protected:
   static thread_local Particle              *Detector_particleHitData_particle;
   static thread_local Particle              *Detector_reconstructUsingNonLinearMethod_particle;
-  static thread_local std::vector<double>   *Detector_detect_detectedTimes;
-  static thread_local std::vector<double>   *Detector_processReconstruction_hitTimes;
-  static thread_local std::vector<double>   *Detector_processReconstruction_propagationLengths;
-  static thread_local std::vector<double>   *Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes;
+  static thread_local HitsData              *Detector_particleHitData_hitsData;
+  static thread_local HitsData              *Detector_detect_detectedsData;
+  static thread_local HitsData              *Detector_distributionOfReconstruction_hitsData;
+  static thread_local HitsData              *Detector_reconstructUsingNonLinearMethod_measuresData;
   static thread_local ROOT::Math::Minimizer *Detector_reconstructUsingNonLinearMethod_minimizer;
-  static thread_local std::vector<std::tuple<double, double, TVector3>> *Detector_particleHitData_hitData;
 
 public:
   inline static Particle *getDetector_particleHitData_particle();
 
   inline static Particle *getDetector_reconstructUsingNonLinearMethod_particle();
 
-  inline static std::vector<double> *getDetector_detect_detectedTimes(size_t size);
+  inline static HitsData *getDetector_particleHitData_hitsData(size_t size);
 
-  inline static std::vector<double> *getDetector_processReconstruction_hitTimes(size_t size);
+  inline static HitsData *getDetector_detect_detectedsData(size_t size);
 
-  inline static std::vector<double> *getDetector_processReconstruction_propagationLengths(size_t size);
+  inline static HitsData *getDetector_distributionOfReconstruction_hitsData(size_t size);
 
-  inline static std::vector<double> *getDetector_reconstructUsingNonLinearMethod_reconstructedHitTimes(size_t size);
+  inline static HitsData *getDetector_reconstructUsingNonLinearMethod_measuresData(size_t size);
 
   inline static ROOT::Math::Minimizer *getDetector_reconstructUsingNonLinearMethod_minimizer();
-
-  inline static std::vector<std::tuple<double, double, TVector3>> *getDetector_particleHitData_hitData(size_t size);
 };
 
-thread_local Particle            *MemoryPool::Detector_particleHitData_particle                              = nullptr;
-thread_local Particle            *MemoryPool::Detector_reconstructUsingNonLinearMethod_particle              = nullptr;
-thread_local std::vector<double> *MemoryPool::Detector_detect_detectedTimes                                  = nullptr;
-thread_local std::vector<double> *MemoryPool::Detector_processReconstruction_hitTimes                        = nullptr;
-thread_local std::vector<double> *MemoryPool::Detector_processReconstruction_propagationLengths              = nullptr;
-thread_local std::vector<double> *MemoryPool::Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes = nullptr;
-thread_local ROOT::Math::Minimizer *MemoryPool::Detector_reconstructUsingNonLinearMethod_minimizer           = nullptr;
-thread_local std::vector<std::tuple<double, double, TVector3>> *MemoryPool::Detector_particleHitData_hitData = nullptr;
+thread_local Particle              *MemoryPool::Detector_particleHitData_particle                     = nullptr;
+thread_local Particle              *MemoryPool::Detector_reconstructUsingNonLinearMethod_particle     = nullptr;
+thread_local HitsData              *MemoryPool::Detector_particleHitData_hitsData                     = nullptr;
+thread_local HitsData              *MemoryPool::Detector_detect_detectedsData                         = nullptr;
+thread_local HitsData              *MemoryPool::Detector_distributionOfReconstruction_hitsData        = nullptr;
+thread_local HitsData              *MemoryPool::Detector_reconstructUsingNonLinearMethod_measuresData = nullptr;
+thread_local ROOT::Math::Minimizer *MemoryPool::Detector_reconstructUsingNonLinearMethod_minimizer    = nullptr;
 
 inline Particle *MemoryPool::getDetector_particleHitData_particle() {
   if (!Detector_particleHitData_particle) Detector_particleHitData_particle = new Particle();
@@ -62,34 +54,27 @@ inline Particle *MemoryPool::getDetector_reconstructUsingNonLinearMethod_particl
   return Detector_reconstructUsingNonLinearMethod_particle;
 };
 
-inline std::vector<double> *MemoryPool::getDetector_detect_detectedTimes(size_t size) {
-  if (!Detector_detect_detectedTimes) Detector_detect_detectedTimes = new std::vector<double>(size);
+inline HitsData *MemoryPool::getDetector_detect_detectedsData(size_t size) {
+  if (!Detector_detect_detectedsData) Detector_detect_detectedsData = new HitsData(size);
 
-  Detector_detect_detectedTimes->clear();
-  return Detector_detect_detectedTimes;
+  Detector_detect_detectedsData->clear();
+  return Detector_detect_detectedsData;
 };
 
-inline std::vector<double> *MemoryPool::getDetector_processReconstruction_hitTimes(size_t size) {
-  if (!Detector_processReconstruction_hitTimes) Detector_processReconstruction_hitTimes = new std::vector<double>(size);
+inline HitsData *MemoryPool::getDetector_distributionOfReconstruction_hitsData(size_t size) {
+  if (!Detector_distributionOfReconstruction_hitsData)
+    Detector_distributionOfReconstruction_hitsData = new HitsData(size);
 
-  Detector_processReconstruction_hitTimes->clear();
-  return Detector_processReconstruction_hitTimes;
+  Detector_distributionOfReconstruction_hitsData->clear();
+  return Detector_distributionOfReconstruction_hitsData;
 };
 
-inline std::vector<double> *MemoryPool::getDetector_processReconstruction_propagationLengths(size_t size) {
-  if (!Detector_processReconstruction_propagationLengths)
-    Detector_processReconstruction_propagationLengths = new std::vector<double>(size);
+inline HitsData *MemoryPool::getDetector_reconstructUsingNonLinearMethod_measuresData(size_t size) {
+  if (!Detector_reconstructUsingNonLinearMethod_measuresData)
+    Detector_reconstructUsingNonLinearMethod_measuresData = new HitsData(size);
 
-  Detector_processReconstruction_propagationLengths->clear();
-  return Detector_processReconstruction_propagationLengths;
-};
-
-inline std::vector<double> *MemoryPool::getDetector_reconstructUsingNonLinearMethod_reconstructedHitTimes(size_t size) {
-  if (!Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes)
-    Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes = new std::vector<double>(size);
-
-  Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes->clear();
-  return Detector_reconstructUsingNonLinearMethod_reconstructedHitTimes;
+  Detector_reconstructUsingNonLinearMethod_measuresData->clear();
+  return Detector_reconstructUsingNonLinearMethod_measuresData;
 };
 
 inline ROOT::Math::Minimizer *MemoryPool::getDetector_reconstructUsingNonLinearMethod_minimizer() {
@@ -99,12 +84,11 @@ inline ROOT::Math::Minimizer *MemoryPool::getDetector_reconstructUsingNonLinearM
   return Detector_reconstructUsingNonLinearMethod_minimizer;
 };
 
-inline std::vector<std::tuple<double, double, TVector3>> *MemoryPool::getDetector_particleHitData_hitData(size_t size) {
-  if (!Detector_particleHitData_hitData)
-    Detector_particleHitData_hitData = new std::vector<std::tuple<double, double, TVector3>>(size);
+inline HitsData *MemoryPool::getDetector_particleHitData_hitsData(size_t size) {
+  if (!Detector_particleHitData_hitsData) Detector_particleHitData_hitsData = new HitsData(size);
 
-  Detector_particleHitData_hitData->clear();
-  return Detector_particleHitData_hitData;
+  Detector_particleHitData_hitsData->clear();
+  return Detector_particleHitData_hitsData;
 };
 
 #endif // MEMORYPOOL_H
