@@ -72,18 +72,31 @@ int main(int argc, char *argv[]) {
   const Detector TOF(EJ_200, B); // Time-of-flight detector in AMS-02
   /* END Detector properties */
 
-  /* BEGIN Particle properties */
-  // The initial position of the particle is fixed at the center of the first scintillator counter
-  constexpr double charge = 3;                 // Charge of Li6 in e
   constexpr double uIn_kg = 1.66053906660e-27; // Atomic mass unit in kg
                                                // (from https://www.bipm.org/documents/20126/41483022/SI-Brochure-9.pdf)
-  constexpr double u         = uIn_kg * TMath::C() * TMath::C() / (1e6 * TMath::Qe()); // Atomic mass unit in MeV/c^2
-  constexpr double mass0     = 6.01512289 * u; // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
-  constexpr double startBeta = 0.4;            // Initial beta of Li6
-  const TVector3   startPosition(0, 0, TOF.getMinZ());   // Initial position of Li6 in cm
+  constexpr double kg = TMath::C() * TMath::C() / (1e6 * TMath::Qe()); // 1 kg in MeV/c^2
+  constexpr double u  = uIn_kg * kg;                                   // Atomic mass unit in MeV/c^2
+  /* BEGIN Particle Li6 properties */
+  // The initial position of the particle is fixed at the center of the first scintillator counter
+  constexpr double chargeLi6    = 3;              // Charge of Li6 in e
+  constexpr double mass0Li6     = 6.01512289 * u; // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
+  constexpr double startBetaLi6 = 0.4;            // Initial beta of Li6
+  const TVector3   startPositionLi6(0, 0, TOF.getMinZ());            // Initial position of Li6 in cm
 
-  Particle Li6(charge, mass0, startBeta, startPosition); // Initial Li6
-  /* END Particle properties */
+  Particle Li6(chargeLi6, mass0Li6, startBetaLi6, startPositionLi6); // Initial Li6
+  /* END Particle Li6 properties */
+
+  /* BEGIN Particle Proton properties */
+  // The initial position of the particle is fixed at the center of the first scintillator counter
+  constexpr double chargeProton = 1;      // Charge of proton in e
+  constexpr double mass0Proton =
+      1.67262192595e-27 * kg;             // Rest mass of proton in MeV/c^2
+                                          //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
+  constexpr double startBetaProton = 0.4; // Initial beta of proton
+  const TVector3   startPositionProton(0, 0, TOF.getMinZ());                        // Initial position of proton in cm
+
+  Particle proton(chargeProton, mass0Proton, startBetaProton, startPositionProton); // Initial proton
+  /* END Particle Proton properties */
 
   // Draw the energy loss of the particle in the scintillator counters using Bethe-Bloch and Landau
   if (false) {
@@ -153,7 +166,7 @@ int main(int argc, char *argv[]) {
 
     delete canvas;
 
-    Li6.setBeta(startBeta);
+    Li6.setBeta(startBetaLi6);
   }
 
   // Draw the kinetic energy distribution after random Landau energy loss
@@ -208,9 +221,14 @@ int main(int argc, char *argv[]) {
 
   // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
   if (true) {
-    Li6.setBeta(0.4);
-    Config::enableEnergyLossFluctuation = false;
-    TOF.distributionOfReconstruction(Li6, 10000, false, true, "test/distributionOfReconstruction_nonLinearMethod.png");
+    proton.setBeta(0.4);
+    TOF.distributionOfReconstruction(
+        proton,
+        10000,
+        false,
+        true,
+        "test/distributionOfReconstruction_nonLinearMethod.png"
+    );
   }
 
   // Draw the difference between real and reconstructed 1/beta of the particle in this detectors
@@ -225,28 +243,37 @@ int main(int argc, char *argv[]) {
     TLegend *legend = new TLegend(0.45, 0.2, 0.88, 0.32);
     legend->SetBorderSize(kNone);
 
-    const int nPoints = 10;
+    const int       nPoints        = 5;
+    const Particle &detectParticle = proton;
 
     Config::useLandau = true;
     // Linear method (Landau Fluctuation)
-    TGraphErrors *graphErrorsLinearMethodLandauFluctuation = TOF.deltaBetaReciprocal(Li6, 0.4, 0.9, nPoints, true);
-    graphErrorsLinearMethodLandauFluctuation->SetLineColor(kBlue);
-    mg->Add(graphErrorsLinearMethodLandauFluctuation);
-    legend->AddEntry(graphErrorsLinearMethodLandauFluctuation, "Linear Method (Landau Fluctuation)", "l");
+    if (false) {
+      TGraphErrors *graphErrorsLinearMethodLandauFluctuation =
+          TOF.deltaBetaReciprocal(detectParticle, 0.4, 0.9, nPoints, true);
+      graphErrorsLinearMethodLandauFluctuation->SetLineColor(kBlue);
+      mg->Add(graphErrorsLinearMethodLandauFluctuation);
+      legend->AddEntry(graphErrorsLinearMethodLandauFluctuation, "Linear Method (Landau Fluctuation)", "l");
+    }
 
     // Non-linear method (Landau Fluctuation)
-    TGraphErrors *graphErrorsNonLinearMethodLandauFluctuation = TOF.deltaBetaReciprocal(Li6, 0.4, 0.9, nPoints, false);
-    graphErrorsNonLinearMethodLandauFluctuation->SetLineColor(kRed);
-    mg->Add(graphErrorsNonLinearMethodLandauFluctuation);
-    legend->AddEntry(graphErrorsNonLinearMethodLandauFluctuation, "Non-Linear Method (Landau Fluctuation)", "l");
+    if (true) {
+      TGraphErrors *graphErrorsNonLinearMethodLandauFluctuation =
+          TOF.deltaBetaReciprocal(detectParticle, 0.4, 0.9, nPoints, false);
+      graphErrorsNonLinearMethodLandauFluctuation->SetLineColor(kRed);
+      mg->Add(graphErrorsNonLinearMethodLandauFluctuation);
+      legend->AddEntry(graphErrorsNonLinearMethodLandauFluctuation, "Non-Linear Method (Landau Fluctuation)", "l");
+    }
 
     Config::useLandau = false;
     // Non-linear method (Gaussian Fluctuation)
-    TGraphErrors *graphErrorsNonLinearMethodGaussianFluctuation =
-        TOF.deltaBetaReciprocal(Li6, 0.4, 0.9, nPoints, false);
-    graphErrorsNonLinearMethodGaussianFluctuation->SetLineColor(kGreen);
-    mg->Add(graphErrorsNonLinearMethodGaussianFluctuation);
-    legend->AddEntry(graphErrorsNonLinearMethodGaussianFluctuation, "Non-Linear Method (Gaussian Fluctuation)", "l");
+    if (true) {
+      TGraphErrors *graphErrorsNonLinearMethodGaussianFluctuation =
+          TOF.deltaBetaReciprocal(detectParticle, 0.4, 0.9, nPoints, false);
+      graphErrorsNonLinearMethodGaussianFluctuation->SetLineColor(kGreen);
+      mg->Add(graphErrorsNonLinearMethodGaussianFluctuation);
+      legend->AddEntry(graphErrorsNonLinearMethodGaussianFluctuation, "Non-Linear Method (Gaussian Fluctuation)", "l");
+    }
 
     mg->Draw("AL");
     legend->Draw();

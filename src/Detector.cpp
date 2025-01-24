@@ -443,8 +443,8 @@ std::pair<double, double> Detector::distributionOfReconstruction(
       "#Delta(1/#beta)",
       ";#Delta(1/#beta);",
       1000,
-      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - .1,
-      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation + .1
+      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation - 1,
+      deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation + 1
   );
   for (const auto &result : results)
     if (!std::isnan(result)) histogram->Fill(result);

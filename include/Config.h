@@ -9,8 +9,8 @@ public:
 
   static inline bool enableFixedSeed = true;              // Enable fixed seed for random number generator
 
-  static inline bool enableTest          = false;         // Enable test
-  static inline bool enableDebug         = false;         // Enable debug
+  static inline bool enableTest  = false;                 // Enable test
+  static inline bool enableDebug = false;                 // Enable debug
 
   static inline bool enableWarning        = false;        // Enable warning
   static inline bool enableWarningAll     = false;        // Enable warning for all
@@ -22,6 +22,7 @@ public:
   static inline bool useBetheBloch               = false; // Use Bethe-Bloch formula
   static inline bool enableEnergyLossFluctuation = true;  // Enable energy loss fluctuation
   static inline bool useLandau                   = true;  // Use Landau distribution
+  static inline bool enableEnergyLossDetection   = true;  // Enable energy loss detection
 
   static inline bool enableMultiThreading = true;         // Enable multi-threading
 
