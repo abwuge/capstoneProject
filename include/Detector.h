@@ -13,9 +13,9 @@
 #include <string>
 #include <vector>
 
+#include <Math/Vector3D.h>
 #include <TGraphErrors.h>
 #include <TRandom3.h>
-#include <TVector3.h>
 
 #include "Config.h"
 #include "HitsData.h"
@@ -32,7 +32,7 @@ public:
    * @param scintillatorCounters Scintillator counters
    * @param B Magnetic field
    */
-  Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B);
+  Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const ROOT::Math::XYZVector &B);
 
   ~Detector();
 
@@ -53,7 +53,7 @@ public:
   /**
    * @brief Get the magnetic field
    */
-  inline TVector3 getB() const;
+  inline ROOT::Math::XYZVector getB() const;
 
   /* END Getters */
 
@@ -71,7 +71,7 @@ public:
    * @param particle Particle
    * @return Direction of the particle in the magnetic field
    */
-  TVector3 particleCyclotronDirection(const Particle &particle) const;
+  ROOT::Math::XYZVector particleCyclotronDirection(const Particle &particle) const;
 
   /**
    * @brief Calculate the hit times and positions of the particle in this detector
@@ -199,7 +199,7 @@ public:
 
 protected:
   std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
-  TVector3                          B;                    // Magnetic field
+  ROOT::Math::XYZVector             B;                    // Magnetic field
 };
 
 inline double Detector::getMinZ() const { return this->scintillatorCounters.front().getLocation(); }
@@ -208,7 +208,7 @@ inline std::vector<ScintillatorCounters> Detector::getScintillatorCounters() con
   return this->scintillatorCounters;
 }
 
-inline TVector3 Detector::getB() const { return this->B; }
+inline ROOT::Math::XYZVector Detector::getB() const { return this->B; }
 
 inline HitsData *Detector::measure(const Particle &particle) const {
   return this->measure(*this->particleHitData(particle, true));

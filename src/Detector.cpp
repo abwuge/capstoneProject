@@ -18,7 +18,7 @@
 
 #include "MemoryPool.h"
 
-Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const TVector3 &B)
+Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const ROOT::Math::XYZVector &B)
     : scintillatorCounters(scintillatorCounters), B(B) {
   std::sort(
       this->scintillatorCounters.begin(),
@@ -30,22 +30,27 @@ Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters
 Detector::~Detector() {}
 
 double Detector::particleCyclotronRadius(const Particle &particle) const {
-  const double    absCharge = std::abs(particle.getCharge());
-  const TVector3 &momentum  = particle.getMomentum();
+  const int absCharge = std::abs(particle.getCharge());
+  if (!absCharge) return std::numeric_limits<double>::infinity();
+  const ROOT::Math::XYZVector &momentum = particle.getMomentum();
 
-  const double radius =
-      momentum.Perp(this->B) / (absCharge * this->B.Mag());   // cyclotron radius in MeV / c / (e * T) = 1e6 J / (c * T)
+  // Calculate perpendicular component to B field
+  const ROOT::Math::XYZVector &BUnit        = this->B.Unit();
+  ROOT::Math::XYZVector        momentumPerp = momentum - momentum.Dot(BUnit) * BUnit;
+
+  const double     radius           = momentumPerp.R() / (absCharge * this->B.R());
   constexpr double conversionFactor = 1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
   return radius * conversionFactor;
 }
 
-TVector3 Detector::particleCyclotronDirection(const Particle &particle) const {
-  const double    charge       = particle.getCharge();
-  const double    chargeSign   = charge / std::abs(charge);
-  const TVector3 &momentumUnit = particle.getMomentum().Unit();
-  const TVector3 &BUint        = this->B.Unit();
+ROOT::Math::XYZVector Detector::particleCyclotronDirection(const Particle &particle) const {
+  const int charge = particle.getCharge();
+  if (!charge) return ROOT::Math::XYZVector(0, 0, 0);
+  const int                    chargeSign   = charge / std::abs(charge);
+  const ROOT::Math::XYZVector &momentumUnit = particle.getMomentum().Unit();
+  const ROOT::Math::XYZVector &BUnit        = this->B.Unit();
 
-  return momentumUnit.Cross(BUint) * chargeSign;
+  return chargeSign * momentumUnit.Cross(BUnit);
 }
 
 HitsData *Detector::particleHitData(
@@ -60,15 +65,25 @@ HitsData *Detector::particleHitData(
 
   *particle = particleOrignal;
 
-  if (this->B.Mag() == 0) {
-    constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
+  constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
 
-    double time = 0, propagationLength = 0;
-    for (const ScintillatorCounters &scintillatorCounter : this->scintillatorCounters) {
-      const double z0 = particle->getPosition().Z();
-      const double vz = particle->getVelocity().Z() * conversionFactor; // velocity in cm/ns
+  double       time = 0, propagationLength = 0;
+  const double initialZ = this->scintillatorCounters.front().getLocation();
+  for (const ScintillatorCounters &scintillatorCounter : this->scintillatorCounters) {
+    const ROOT::Math::XYZVector &position = particle->getPosition();
+    const ROOT::Math::XYZVector &velocity = particle->getVelocity() * conversionFactor; // velocity in cm/ns
+    const int                    charge   = particle->getCharge();
 
-      if (vz <= 0) {
+    // Calculate the next hit
+    double                deltaTime = 0, deltaPropagatedLength = 0;
+    ROOT::Math::XYZVector hitPosition;
+
+    const double nextZ = scintillatorCounter.getLocation();
+    if (!charge || this->B.R() < 1e-10
+        || position.Z()
+               < initialZ) { // Magnetic field influence is negligible, the particle will move in a straight line
+      const double velocityZ = velocity.Z();
+      if (velocityZ <= 0) {
         if (Config::enableWarning)
           printf(
               "[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or "
@@ -80,49 +95,69 @@ HitsData *Detector::particleHitData(
 
       // The trajectory is a straight line (x, y, z) = (x0, y0, z0) + t * (vx, vy, vz)
       // The hit time is calculated by the formula: t = (z - z0) / vz
-      const double   z           = scintillatorCounter.getLocation();
-      const double   deltaTime   = (z - z0) / vz;
-      const TVector3 deltaX      = deltaTime * particle->getVelocity() * conversionFactor;
-      const TVector3 hitPosition = particle->getPosition() + deltaX;
+      deltaTime             = (nextZ - position.Z()) / velocityZ;
+      deltaPropagatedLength = deltaTime * velocity.R();
+      hitPosition           = particle->getPosition() + deltaTime * velocity;
       particle->setPosition(hitPosition);
+    } else { // Magnetic field is not zero, the particle will move in a spiral
+      // Coming soon
+      return 0;
 
-      double particleEnergyLoss = 0;
-      if (enableEnergyLoss) {
-        if (measuresData) particleEnergyLoss = measuresData->at(hitsData->size()).hitEnergyLoss;
-        else if (Config::useBetheBloch)
-          particleEnergyLoss = scintillatorCounter.energyLoss(*particle);
-        else if (Config::enableEnergyLossFluctuation)
-          if (enableEnergyLossFluctuation) {
-            const double Landau_xi = scintillatorCounter.LandauMostProbableEnergyLoss_xi(*particle);
-            const double mostProbableEnergyLoss =
-                scintillatorCounter.LandauMostProbableEnergyLoss(Landau_xi, *particle);
+      // const double   radius                = this->particleCyclotronRadius(*particle);
+      // const ROOT::Math::XYZVector B_unit                = this->B.Unit();
+      // const ROOT::Math::XYZVector velocityParallel      = velocity.Dot(B_unit) * B_unit;
+      // const ROOT::Math::XYZVector velocityPerpendicular = velocity - velocityParallel;
 
-            if (Config::useLandau)
-              particleEnergyLoss = Config::random->Landau(mostProbableEnergyLoss, 4.018 * Landau_xi);
-            else
-              particleEnergyLoss = Config::random->Gaus(mostProbableEnergyLoss, 4.018 * Landau_xi);
+      // // The is a UNIFORM spiral motion
+      // // Perpendicular plane: (x', y') = (x0, y0) + r * (cos(omega * t), sin(omega * t))
+      // // Parallel direction: z' = z0 + v_parallel * t
 
-          } else
-            particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(*particle);
-        else
-          particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(*particle);
-
-        particle->setEnergy(particle->getEnergy() - particleEnergyLoss);
-        if (Config::enableDebug)
-          printf(
-              "[Info] Energy loss: %f MeV, Energy: %f MeV, Velocity: %f c\n",
-              particleEnergyLoss,
-              particle->getEnergy(),
-              particle->getVelocity().Mag()
-          );
-      }
-
-      time += deltaTime, propagationLength += deltaX.Mag();
-      hitsData->push_back(time, propagationLength, particleEnergyLoss, hitPosition);
+      // // rotate the coordinate system so that the magnetic field is in the z direction
+      // ROOT::Math::XYZVector Z(0, 0, 1);
+      // ROOT::Math::XYZVector B(this->B.X(), this->B.Y(), this->B.Z());
+      // ROOT::Math::XYZVector rotationAxis = Z.Cross(B).Unit();
+      // const double omega = particle->getCharge() * this->B.R() / particle->getMomentum().R();
+      // const double phi   = TMath::ATan2(position.Y(), position.X());
+      // const double t     = time;
+      // deltaTime          = (omega * t - phi) / omega;
+      // deltaPropagatedLength =
+      //     radius * TMath::Abs(TMath::ATan2(TMath::Sin(omega * deltaTime), TMath::Cos(omega * deltaTime)));
+      // hitPosition = particle->getPosition() + radius * TMath::Cos(omega * deltaTime) * velocity
+      //             + radius * TMath::Sin(omega * deltaTime) * cyclotronDirection;
+      // particle->setPosition(hitPosition);
     }
-  } else {
-    printf("[Error] Have not implemented the case when the magnetic field is not zero!\n");
-    exit(1);
+
+    double particleEnergyLoss = 0;
+    if (enableEnergyLoss) {
+      if (measuresData) particleEnergyLoss = measuresData->at(hitsData->size()).hitEnergyLoss;
+      else if (Config::useBetheBloch)
+        particleEnergyLoss = scintillatorCounter.energyLoss(*particle);
+      else if (Config::enableEnergyLossFluctuation)
+        if (enableEnergyLossFluctuation) {
+          const double Landau_xi              = scintillatorCounter.LandauMostProbableEnergyLoss_xi(*particle);
+          const double mostProbableEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(Landau_xi, *particle);
+
+          if (Config::useLandau) particleEnergyLoss = Config::random->Landau(mostProbableEnergyLoss, 4.018 * Landau_xi);
+          else
+            particleEnergyLoss = Config::random->Gaus(mostProbableEnergyLoss, 4.018 * Landau_xi);
+
+        } else
+          particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(*particle);
+      else
+        particleEnergyLoss = scintillatorCounter.LandauMostProbableEnergyLoss(*particle);
+
+      particle->setEnergy(particle->getEnergy() - particleEnergyLoss);
+      if (Config::enableDebug)
+        printf(
+            "[Info] Energy loss: %f MeV, Energy: %f MeV, Velocity: %f c\n",
+            particleEnergyLoss,
+            particle->getEnergy(),
+            particle->getVelocity().R()
+        );
+    }
+
+    time += deltaTime, propagationLength += deltaPropagatedLength;
+    hitsData->push_back(time, propagationLength, particleEnergyLoss, hitPosition);
   }
 
   return hitsData;

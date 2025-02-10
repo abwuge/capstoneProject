@@ -4,14 +4,15 @@
 #include <tuple>
 #include <vector>
 
+#include <Math/Vector3D.h>
 #include <TAxis.h>
 #include <TCanvas.h>
 #include <TGraph.h>
 #include <TH1F.h>
 #include <TLegend.h>
+#include <TMath.h>
 #include <TMultiGraph.h>
 #include <TROOT.h>
-#include <TVector3.h>
 
 #include "Config.h"
 #include "Detector.h"
@@ -65,10 +66,10 @@ int main(int argc, char *argv[]) {
         ScintillatorCounters(EJ_200Location[i], EJ_200Direction[i], thickness, timeResolution, *polyvinyltoluene)
     );
   }
-  // const TVector3 B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
-  const TVector3 B(0, 0, 0);     // used for testing
+  // const ROOT::Math::XYZVector B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
+  const ROOT::Math::XYZVector B(0, 0, 0); // used for testing
 
-  const Detector TOF(EJ_200, B); // Time-of-flight detector in AMS-02
+  const Detector TOF(EJ_200, B);          // Time-of-flight detector in AMS-02
   /* END Detector properties */
 
   constexpr double uIn_kg = 1.66053906660e-27; // Atomic mass unit in kg
@@ -77,22 +78,22 @@ int main(int argc, char *argv[]) {
   constexpr double u  = uIn_kg * kg;                                   // Atomic mass unit in MeV/c^2
   /* BEGIN Particle Li6 properties */
   // The initial position of the particle is fixed at the center of the first scintillator counter
-  constexpr double chargeLi6    = 3;              // Charge of Li6 in e
+  constexpr int    chargeLi6    = 3;              // Charge of Li6 in e
   constexpr double mass0Li6     = 6.01512289 * u; // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
   constexpr double startBetaLi6 = 0.4;            // Initial beta of Li6
-  const TVector3   startPositionLi6(0, 0, TOF.getMinZ());            // Initial position of Li6 in cm
+  const ROOT::Math::XYZVector startPositionLi6(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
 
   Particle Li6(chargeLi6, mass0Li6, startBetaLi6, startPositionLi6); // Initial Li6
   /* END Particle Li6 properties */
 
   /* BEGIN Particle Proton properties */
   // The initial position of the particle is fixed at the center of the first scintillator counter
-  constexpr double chargeProton = 1;      // Charge of proton in e
+  constexpr int    chargeProton = 1; // Charge of proton in e
   constexpr double mass0Proton =
-      1.67262192595e-27 * kg;             // Rest mass of proton in MeV/c^2
-                                          //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
-  constexpr double startBetaProton = 0.4; // Initial beta of proton
-  const TVector3   startPositionProton(0, 0, TOF.getMinZ());                        // Initial position of proton in cm
+      1.67262192595e-27 * kg;        // Rest mass of proton in MeV/c^2
+                                     //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
+  constexpr double            startBetaProton = 0.4;                                // Initial beta of proton
+  const ROOT::Math::XYZVector startPositionProton(0, 0, TOF.getMinZ());             // Initial position of proton in cm
 
   Particle proton(chargeProton, mass0Proton, startBetaProton, startPositionProton); // Initial proton
   /* END Particle Proton properties */

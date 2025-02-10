@@ -1,23 +1,23 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include <TVector3.h>
+#include <Math/Vector3D.h>
 
 #include "Config.h"
 
 class Particle {
 protected:
-  double charge; // Charge of the particle in e
+  int    charge; // Charge of the particle in e
   double mass0;  // Rest mass of the particle in MeV/c^2
   double mass;   // Mass of the particle in MeV/c^2
   // Question: I have used `double &energy = mass` to ensure that the energy is always equal to the mass, but it is not
   // working as expected. Why?
-  double   energy;   // Energy of the particle in MeV (energy = mass in natural units)
-  double   gamma;    // Lorentz factor of the particle
-  double   beta;     // Beta of the particle
-  TVector3 position; // Position of the particle in cm
-  TVector3 momentum; // Momentum of the particle in MeV/c
-  TVector3 velocity; // Velocity of the particle in c
+  double                energy;   // Energy of the particle in MeV (energy = mass in natural units)
+  double                gamma;    // Lorentz factor of the particle
+  double                beta;     // Beta of the particle
+  ROOT::Math::XYZVector position; // Position of the particle in cm
+  ROOT::Math::XYZVector momentum; // Momentum of the particle in MeV/c
+  ROOT::Math::XYZVector velocity; // Velocity of the particle in c
 
 public:
   /* BEGIN Constructor & Destructor */
@@ -36,7 +36,12 @@ public:
    * @param momentum Momentum of the particle in MeV/c
    * @param position Position of the particle in cm
    */
-  Particle(const double charge, const double mass0, const TVector3 &momentum, const TVector3 &position);
+  Particle(
+      const int                    charge,
+      const double                 mass0,
+      const ROOT::Math::XYZVector &momentum,
+      const ROOT::Math::XYZVector &position
+  );
 
   /**
    * @brief Constructor
@@ -47,11 +52,11 @@ public:
    * @param direction Moving direction of the particle
    */
   Particle(
-      const double    charge,
-      const double    mass0,
-      double          beta,
-      const TVector3 &position,
-      const TVector3 &direction = TVector3(0, 0, 1)
+      const int                    charge,
+      const double                 mass0,
+      double                       beta,
+      const ROOT::Math::XYZVector &position,
+      const ROOT::Math::XYZVector &direction = ROOT::Math::XYZVector(0, 0, 1)
   );
 
   ~Particle();
@@ -63,7 +68,7 @@ public:
   /**
    * @brief Get the charge of the particle
    */
-  inline double getCharge() const;
+  inline int getCharge() const;
 
   /**
    * @brief Get the rest mass of the particle
@@ -93,17 +98,17 @@ public:
   /**
    * @brief Get the position of the particle
    */
-  TVector3 getPosition() const;
+  ROOT::Math::XYZVector getPosition() const;
 
   /**
    * @brief Get the momentum of the particle
    */
-  TVector3 getMomentum() const;
+  ROOT::Math::XYZVector getMomentum() const;
 
   /**
    * @brief Get the velocity of the particle
    */
-  TVector3 getVelocity() const;
+  ROOT::Math::XYZVector getVelocity() const;
 
   /* END Getters */
 
@@ -142,21 +147,21 @@ public:
    * @param position Position of the particle in cm
    * @return True if the position is set successfully, false otherwise
    */
-  bool setPosition(const TVector3 &position);
+  bool setPosition(const ROOT::Math::XYZVector &position);
 
   /**
    * @brief Set the momentum of the particle
    * @param momentum Momentum of the particle in MeV/c
    * @return True if the momentum is set successfully, false otherwise
    */
-  bool setMomentum(const TVector3 &momentum);
+  bool setMomentum(const ROOT::Math::XYZVector &momentum);
 
   /**
    * @brief Set the velocity of the particle
    * @param velocity Velocity of the particle in c
    * @return True if the velocity is set successfully, false otherwise
    */
-  bool setVelocity(const TVector3 &velocity);
+  bool setVelocity(const ROOT::Math::XYZVector &velocity);
 
   /* END Setters */
 
@@ -173,7 +178,7 @@ public:
   /* END Methods */
 };
 
-inline double Particle::getCharge() const { return this->charge; }
+inline int Particle::getCharge() const { return this->charge; }
 
 inline double Particle::getMass0() const { return this->mass0; }
 
@@ -185,11 +190,11 @@ inline double Particle::getGamma() const { return this->gamma; }
 
 inline double Particle::getBeta() const { return this->beta; }
 
-inline TVector3 Particle::getPosition() const { return this->position; }
+inline ROOT::Math::XYZVector Particle::getPosition() const { return this->position; }
 
-inline TVector3 Particle::getMomentum() const { return this->momentum; }
+inline ROOT::Math::XYZVector Particle::getMomentum() const { return this->momentum; }
 
-inline TVector3 Particle::getVelocity() const { return this->velocity; }
+inline ROOT::Math::XYZVector Particle::getVelocity() const { return this->velocity; }
 
 inline bool Particle::setEnergy(const double energy) { return this->setMass(energy); }
 

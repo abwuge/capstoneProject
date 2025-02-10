@@ -6,13 +6,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include <TVector3.h>
+#include <Math/Vector3D.h>
 
 struct HitData {
-  double   hitTime;
-  double   hitLength;
-  double   hitEnergyLoss;
-  TVector3 hitPosition;
+  double                hitTime;
+  double                hitLength;
+  double                hitEnergyLoss;
+  ROOT::Math::XYZVector hitPosition;
 };
 
 class HitsData {
@@ -56,7 +56,7 @@ public:
   /**
    * @brief Get hit positions
    */
-  inline const std::vector<TVector3> &getHitsPosition() const;
+  inline const std::vector<ROOT::Math::XYZVector> &getHitsPosition() const;
 
   /**
    * @brief Get the size of the hits data
@@ -100,7 +100,7 @@ public:
    * @param index Index
    * @param hitPosition Hit position (in cm)
    */
-  inline void setHitPosition(size_t index, const TVector3 &hitPosition);
+  inline void setHitPosition(size_t index, const ROOT::Math::XYZVector &hitPosition);
 
   /* END Setters */
 
@@ -119,8 +119,12 @@ public:
    * @param hitEnergyLoss Energy loss (in MeV)
    * @param hitPosition Hit position (in cm)
    */
-  inline void
-  push_back(const double hitTime, const double hitLength, const double hitEnergyLoss, const TVector3 &hitPosition);
+  inline void push_back(
+      const double                 hitTime,
+      const double                 hitLength,
+      const double                 hitEnergyLoss,
+      const ROOT::Math::XYZVector &hitPosition
+  );
 
   /**
    * @brief Clear the hits data
@@ -130,11 +134,11 @@ public:
   /* END Methods */
 
 protected:
-  std::vector<HitData>  hitsData;       // Hit data
-  std::vector<double>   hitsTime;       // Hit times (in ns)
-  std::vector<double>   hitsLength;     // Propagation lengths (in cm)
-  std::vector<double>   hitsEnergyLoss; // Energy loss (in MeV)
-  std::vector<TVector3> hitsPosition;   // Hit position (in cm)
+  std::vector<HitData>               hitsData;       // Hit data
+  std::vector<double>                hitsTime;       // Hit times (in ns)
+  std::vector<double>                hitsLength;     // Propagation lengths (in cm)
+  std::vector<double>                hitsEnergyLoss; // Energy loss (in MeV)
+  std::vector<ROOT::Math::XYZVector> hitsPosition;   // Hit position (in cm)
 };
 
 #include "HitsData.inl"

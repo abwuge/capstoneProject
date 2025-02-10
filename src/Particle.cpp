@@ -3,24 +3,29 @@
 #include <TMath.h>
 
 Particle::Particle()
-    : charge(0), mass0(0), mass(0), energy(0), gamma(0), beta(0), position(TVector3(0, 0, 0)),
-      momentum(TVector3(0, 0, 0)), velocity(TVector3(0, 0, 0)) {}
+    : charge(0), mass0(0), mass(0), energy(0), gamma(0), beta(0), position(ROOT::Math::XYZVector(0, 0, 0)),
+      momentum(ROOT::Math::XYZVector(0, 0, 0)), velocity(ROOT::Math::XYZVector(0, 0, 0)) {}
 
-Particle::Particle(const double charge, const double mass0, const TVector3 &momentum, const TVector3 &position)
+Particle::Particle(
+    const int                    charge,
+    const double                 mass0,
+    const ROOT::Math::XYZVector &momentum,
+    const ROOT::Math::XYZVector &position
+)
     : charge(charge), mass0(mass0), momentum(momentum), position(position) {
   this->energy   = TMath::Sqrt(this->momentum.Mag2() + this->mass0 * this->mass0);
   this->mass     = this->energy;
   this->gamma    = this->energy / this->mass0;
   this->velocity = this->momentum * (1 / this->mass);
-  this->beta     = this->velocity.Mag();
+  this->beta     = this->velocity.R();
 }
 
 Particle::Particle(
-    const double    charge,
-    const double    mass0,
-    double          beta,
-    const TVector3 &position,
-    const TVector3 &direction
+    const int                    charge,
+    const double                 mass0,
+    double                       beta,
+    const ROOT::Math::XYZVector &position,
+    const ROOT::Math::XYZVector &direction
 )
     : charge(charge), mass0(mass0), position(position) {
   if (beta < 0) {
@@ -46,11 +51,11 @@ Particle::Particle(
 Particle::~Particle() {}
 
 bool Particle::setMass(double mass) {
-  if (this->momentum.Mag() == 0) {
+  if (this->momentum.R() == 0) {
     if (Config::enableWarning)
       printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
 
-    this->momentum = TVector3(0, 0, 1);
+    this->momentum = ROOT::Math::XYZVector(0, 0, 1);
   }
 
   if (mass < this->mass0) {
@@ -65,17 +70,17 @@ bool Particle::setMass(double mass) {
   this->gamma    = this->energy / this->mass0;
   this->momentum = TMath::Sqrt(this->energy * this->energy - this->mass0 * this->mass0) * this->momentum.Unit();
   this->velocity = this->momentum * (1 / this->mass);
-  this->beta     = this->velocity.Mag();
+  this->beta     = this->velocity.R();
 
   return true;
 }
 
 bool Particle::setBeta(double beta) {
-  if (this->velocity.Mag() == 0) {
+  if (this->velocity.R() == 0) {
     if (Config::enableWarning)
       printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
 
-    this->velocity = TVector3(0, 0, 1);
+    this->velocity = ROOT::Math::XYZVector(0, 0, 1);
   }
 
   if (beta < 0 || beta > 1) {
@@ -101,11 +106,11 @@ bool Particle::setBeta(double beta) {
 }
 
 bool Particle::setBetaGamma(double betaGamma) {
-  if (this->velocity.Mag() == 0) {
+  if (this->velocity.R() == 0) {
     if (Config::enableWarning)
       printf("[Warning] No direction is set for the particle! Use (0, 0, 1) as the direction!\n");
 
-    this->momentum = TVector3(0, 0, 1);
+    this->momentum = ROOT::Math::XYZVector(0, 0, 1);
   }
 
   if (betaGamma < 0) {
@@ -124,26 +129,26 @@ bool Particle::setBetaGamma(double betaGamma) {
   return true;
 }
 
-bool Particle::setPosition(const TVector3 &position) {
+bool Particle::setPosition(const ROOT::Math::XYZVector &position) {
   this->position = position;
 
   return true;
 }
 
-bool Particle::setMomentum(const TVector3 &momentum) {
+bool Particle::setMomentum(const ROOT::Math::XYZVector &momentum) {
   this->momentum = momentum;
   this->energy   = TMath::Sqrt(this->momentum.Mag2() + this->mass0 * this->mass0);
   this->mass     = this->energy;
   this->gamma    = this->energy / this->mass0;
   this->velocity = this->momentum * (1 / this->mass);
-  this->beta     = this->velocity.Mag();
+  this->beta     = this->velocity.R();
 
   return true;
 }
 
-bool Particle::setVelocity(const TVector3 &velocity) {
+bool Particle::setVelocity(const ROOT::Math::XYZVector &velocity) {
   this->velocity = velocity;
-  this->beta     = this->velocity.Mag();
+  this->beta     = this->velocity.R();
   this->gamma    = 1 / TMath::Sqrt(1 - this->beta * this->beta);
   this->energy   = this->gamma * this->mass0;
   this->mass     = this->energy;

@@ -105,7 +105,7 @@ double ScintillatorCounters::LandauMostProbableEnergyLoss_xi(const Particle &par
   double beta = particle.getBeta();
   if (beta < 1e-10) return 0;
   constexpr double K = 0.307075; // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for dE/dx)
-  const double     z = particle.getCharge(
+  const int        z = particle.getCharge(
   ); // charge number of the particle (since we use charge in units of e, the charge number is the same as the charge)
   const double x = this->thickness * this->material.getDensity(); // x in g/cm^2
   const double Z = this->material.getZ();
