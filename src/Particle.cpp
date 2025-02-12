@@ -30,7 +30,7 @@ Particle::Particle(
     const ROOT::Math::XYZVector &direction
 )
     : pCharge(charge), pMass0(mass0), pPosition(position), pDirection(direction.Unit()) {
-  if (this->pDirection.R()) {
+  if (!this->pDirection.R()) {
     if (Config::enableWarning)
       printf("[Warning] The direction of the particle cannot be (0, 0, 0)! Setting the direction to (0, 0, 1)!\n");
 
@@ -157,7 +157,7 @@ bool Particle::setVelocity(const ROOT::Math::XYZVector &velocity) {
 bool Particle::setDirection(ROOT::Math::XYZVector direction) {
   this->pDirection = direction.Unit();
 
-  if (this->pDirection.R()) {
+  if (!this->pDirection.R()) {
     if (Config::enableWarning)
       printf("[Warning] The direction of the particle cannot be (0, 0, 0)! Setting the direction to (0, 0, 1)!\n");
 

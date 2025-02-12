@@ -67,8 +67,8 @@ int main(int argc, char *argv[]) {
         ScintillatorCounters(EJ_200Location[i], EJ_200Direction[i], thickness, timeResolution, *polyvinyltoluene)
     );
   }
-  // const ROOT::Math::XYZVector B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
-  const ROOT::Math::XYZVector B(0, 0, 0); // used for testing
+  const ROOT::Math::XYZVector B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
+  // const ROOT::Math::XYZVector B(0, 0, 0); // used for testing
 
   const Detector TOF(EJ_200, B);          // Time-of-flight detector in AMS-02
   /* END Detector properties */
@@ -93,9 +93,9 @@ int main(int argc, char *argv[]) {
   constexpr double mass0Proton =
       1.67262192595e-27 * kg;        // Rest mass of proton in MeV/c^2
                                      //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
-  constexpr double            startBetaProton = 0.4;                    // Initial beta of proton
+  constexpr double            startBetaProton = 0.5;                    // Initial beta of proton
   const ROOT::Math::XYZPoint  startPositionProton(0, 0, TOF.getMinZ()); // Initial position of proton in cm
-  const ROOT::Math::XYZVector directionProton(0, 0, 1);                 // Direction of proton
+  const ROOT::Math::XYZVector directionProton(1, 1, 1);                 // Direction of proton
 
   Particle proton(chargeProton, mass0Proton, startBetaProton, startPositionProton, directionProton); // Initial proton
   /* END Particle Proton properties */
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
 
   // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
 
-  // TOF.plotReconstructDataUsingLinearMethod(Li6, "test/plotReconstructDataUsingLinearMethod.png");
+  TOF.plotReconstructDataUsingLinearMethod(proton, "test/plotReconstructDataUsingLinearMethod.png");
 
   if (false) {
     proton.setBeta(0.4);
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Draw the difference between real and reconstructed 1/beta of the particle in this detectors
-  if (true) {
+  if (false) {
     TCanvas *canvas = new TCanvas("canvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
     canvas->SetGrid();
     canvas->cd();

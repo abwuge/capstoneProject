@@ -6,7 +6,7 @@
             "command": "/usr/bin/bash",
             "args": [
                 "-c",
-                "/usr/bin/g++ -fdiagnostics-color=always -I${workspaceFolder}/include $(root-config --cflags) -O0 -funroll-loops -Wall -Wextra -Wpedantic -Wshadow -g -o ${workspaceFolder}/bin/output ${workspaceFolder}/src/*.cpp $(root-config --libs) -lvdt -flto=auto -Wl,--as-needed"
+                "/usr/bin/g++ -fdiagnostics-color=always -I${workspaceFolder}/include $(root-config --cflags) -O0 -funroll-loops -Wall -Wextra -Wpedantic -Wshadow -g3 -o ${workspaceFolder}/bin/output ${workspaceFolder}/src/*.cpp $(root-config --libs) -lvdt -Wl,--as-needed"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

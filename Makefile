@@ -7,7 +7,7 @@ SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 CXX := g++
-CXXFLAGS := -I$(INC_DIR) `root-config --cflags` -O3 -funroll-loops -Wall -Wextra -Wpedantic -Wshadow
+CXXFLAGS := -fdiagnostics-color=always -I$(INC_DIR) `root-config --cflags` -O3 -funroll-loops -Wall -Wextra -Wpedantic -Wshadow
 LDFLAGS := `root-config --libs` -lvdt -flto=auto -Wl,--as-needed
 
 $(NAME): $(OBJS)
@@ -19,8 +19,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 
 
 .PHONY: debug
-debug: CXXFLAGS += -g
-debug: LDFLAGS += -g
+debug: CXXFLAGS := -fdiagnostics-color=always -I$(INC_DIR) `root-config --cflags` -O0 -Wall -Wextra -Wpedantic -Wshadow -g3
+debug: LDFLAGS := `root-config --libs` -lvdt -Wl,--as-needed
 debug: $(NAME)
 
 

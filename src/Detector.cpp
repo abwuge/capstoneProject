@@ -99,13 +99,13 @@ HitsData *Detector::particleHitData(
         }
 
         const ROOT::Math::XYPoint position0(position.X(), position.Z()); // initial position in the X-Z plane
-        const double              _B = this->dB.Y(); // magnetic field (since the magnetic field is in the y direction)
-        const double              _y = scintillatorCounter.getLocation();
+        const double              B = this->dB.Y(); // magnetic field (since the magnetic field is in the y direction)
+        const double              y = scintillatorCounter.getLocation();
 
         constexpr double conversionFactor__MeV_c_e_T2cm =
             1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
         constexpr double conversionFactor__cm_ns2c = 1e9 / TMath::Ccgs(); // conversion factor from cm/ns to c
-        const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (_B * abs(charge))
+        const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * abs(charge))
                             * conversionFactor__MeV_c_e_T2cm;
 
         ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
@@ -115,7 +115,7 @@ HitsData *Detector::particleHitData(
         const double theta0 = TMath::ATan2(position0.Y() - center.Y(), position0.X() - center.X());
         const double omega  = velocity0.R() / radius;
 
-        double angle = TMath::ASin((_y - center.Y()) / radius) - theta0;
+        double angle = TMath::ASin((y - center.Y()) / radius) - theta0;
 
         if (std::isnan(angle) || angle < 0) {
           if (Config::enableWarning) {
@@ -128,7 +128,7 @@ HitsData *Detector::particleHitData(
         deltaTime               = angle / omega;
         deltaPropagatedLengthXZ = radius * angle;
         hitPositionX            = center.X() + radius * TMath::Cos(omega * deltaTime + theta0);
-        hitPositionZ            = _y;
+        hitPositionZ            = y;
         velocityX               = -radius * omega * TMath::Sin(omega * deltaTime + theta0);
         velocityZ               = radius * omega * TMath::Cos(omega * deltaTime + theta0);
       }
@@ -185,6 +185,7 @@ HitsData *Detector::particleHitData(
     }
 
     time += deltaTime, propagationLength += deltaPropagatedLength;
+    printf("[Info] Time: %f ns, Propagation length: %f cm\n", time, propagationLength);
     hitsData->push_back(time, propagationLength, particleEnergyLoss, hitPosition);
   }
 
@@ -406,7 +407,7 @@ std::pair<double, double> Detector::distributionOfReconstruction(
   double deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation;
   {
     const HitsData *hitsData = this->particleHitData(particle, true, false);
-    size_t             n        = hitsData->size();
+    size_t          n        = hitsData->size();
 
     // adjust the beta of the particle to make sure it can hit all the scintillator counters
     if (n != this->dScintillatorCounters.size()) {
