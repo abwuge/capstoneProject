@@ -6,6 +6,9 @@
 #include <Math/Factory.h>
 #include <Math/Functor.h>
 #include <Math/Minimizer.h>
+#include <Math/Point2D.h>
+#include <Math/Point3D.h>
+#include <Math/Vector2D.h>
 #include <TCanvas.h>
 #include <TF1.h>
 #include <TFitResult.h>
@@ -19,39 +22,15 @@
 #include "MemoryPool.h"
 
 Detector::Detector(const std::vector<ScintillatorCounters> &scintillatorCounters, const ROOT::Math::XYZVector &B)
-    : scintillatorCounters(scintillatorCounters), B(B) {
+    : dScintillatorCounters(scintillatorCounters), dB(B) {
   std::sort(
-      this->scintillatorCounters.begin(),
-      this->scintillatorCounters.end(),
+      this->dScintillatorCounters.begin(),
+      this->dScintillatorCounters.end(),
       [](const ScintillatorCounters &a, const ScintillatorCounters &b) { return a.getLocation() < b.getLocation(); }
   );
 }
 
 Detector::~Detector() {}
-
-double Detector::particleCyclotronRadius(const Particle &particle) const {
-  const int absCharge = std::abs(particle.getCharge());
-  if (!absCharge) return std::numeric_limits<double>::infinity();
-  const ROOT::Math::XYZVector &momentum = particle.getMomentum();
-
-  // Calculate perpendicular component to B field
-  const ROOT::Math::XYZVector &BUnit        = this->B.Unit();
-  ROOT::Math::XYZVector        momentumPerp = momentum - momentum.Dot(BUnit) * BUnit;
-
-  const double     radius           = momentumPerp.R() / (absCharge * this->B.R());
-  constexpr double conversionFactor = 1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
-  return radius * conversionFactor;
-}
-
-ROOT::Math::XYZVector Detector::particleCyclotronDirection(const Particle &particle) const {
-  const int charge = particle.getCharge();
-  if (!charge) return ROOT::Math::XYZVector(0, 0, 0);
-  const int                    chargeSign   = charge / std::abs(charge);
-  const ROOT::Math::XYZVector &momentumUnit = particle.getMomentum().Unit();
-  const ROOT::Math::XYZVector &BUnit        = this->B.Unit();
-
-  return chargeSign * momentumUnit.Cross(BUnit);
-}
 
 HitsData *Detector::particleHitData(
     const Particle &particleOrignal,
@@ -60,71 +39,120 @@ HitsData *Detector::particleHitData(
     const HitsData *measuresData
 ) const {
   // use MemoryPool to avoid futex_wait in std::mutex
-  HitsData *hitsData = MemoryPool::getDetector_particleHitData_hitsData(this->scintillatorCounters.size());
+  HitsData *hitsData = MemoryPool::getDetector_particleHitData_hitsData(this->dScintillatorCounters.size());
   Particle *particle = MemoryPool::getDetector_particleHitData_particle();
 
   *particle = particleOrignal;
 
-  constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
-
   double       time = 0, propagationLength = 0;
-  const double initialZ = this->scintillatorCounters.front().getLocation();
-  for (const ScintillatorCounters &scintillatorCounter : this->scintillatorCounters) {
-    const ROOT::Math::XYZVector &position = particle->getPosition();
-    const ROOT::Math::XYZVector &velocity = particle->getVelocity() * conversionFactor; // velocity in cm/ns
+  const double initialZ = this->dScintillatorCounters.front().getLocation();
+  for (const ScintillatorCounters &scintillatorCounter : this->dScintillatorCounters) {
+    constexpr double conversionFactor__c2cm_ns = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
+
+    const ROOT::Math::XYZPoint  &position = particle->getPosition();
+    const ROOT::Math::XYZVector &velocity = particle->getVelocity() * conversionFactor__c2cm_ns; // velocity in cm/ns
     const int                    charge   = particle->getCharge();
 
-    // Calculate the next hit
-    double                deltaTime = 0, deltaPropagatedLength = 0;
-    ROOT::Math::XYZVector hitPosition;
+    double               deltaTime = 0, deltaPropagatedLength = 0;
+    ROOT::Math::XYZPoint hitPosition;
 
-    const double nextZ = scintillatorCounter.getLocation();
-    if (!charge || this->B.R() < 1e-10
-        || position.Z()
-               < initialZ) { // Magnetic field influence is negligible, the particle will move in a straight line
-      const double velocityZ = velocity.Z();
-      if (velocityZ <= 0) {
+    auto linearPropagate = [&]() -> bool {
+      if (velocity.Z() <= 0) {
         if (Config::enableWarning)
           printf(
               "[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or "
               "negative!\n"
           );
 
-        break;
+        return false;
       }
 
       // The trajectory is a straight line (x, y, z) = (x0, y0, z0) + t * (vx, vy, vz)
       // The hit time is calculated by the formula: t = (z - z0) / vz
-      deltaTime             = (nextZ - position.Z()) / velocityZ;
+      deltaTime             = (scintillatorCounter.getLocation() - position.Z()) / velocity.Z();
       deltaPropagatedLength = deltaTime * velocity.R();
       hitPosition           = particle->getPosition() + deltaTime * velocity;
       particle->setPosition(hitPosition);
-    } else { // Magnetic field is not zero, the particle will move in a spiral
-      // Coming soon
-      return 0;
 
-      // const double   radius                = this->particleCyclotronRadius(*particle);
-      // const ROOT::Math::XYZVector B_unit                = this->B.Unit();
-      // const ROOT::Math::XYZVector velocityParallel      = velocity.Dot(B_unit) * B_unit;
-      // const ROOT::Math::XYZVector velocityPerpendicular = velocity - velocityParallel;
+      return true;
+    };
 
-      // // The is a UNIFORM spiral motion
-      // // Perpendicular plane: (x', y') = (x0, y0) + r * (cos(omega * t), sin(omega * t))
-      // // Parallel direction: z' = z0 + v_parallel * t
+    auto spiralPropagate = [&]() -> bool {
+      if (1 - this->dB.Unit().Y() > 1e-10) {
+        printf(
+            "[Error] The magnetic field is not in the y direction! Only supports the magnetic field in the y direction "
+            "at the moment!\n"
+        );
 
-      // // rotate the coordinate system so that the magnetic field is in the z direction
-      // ROOT::Math::XYZVector Z(0, 0, 1);
-      // ROOT::Math::XYZVector B(this->B.X(), this->B.Y(), this->B.Z());
-      // ROOT::Math::XYZVector rotationAxis = Z.Cross(B).Unit();
-      // const double omega = particle->getCharge() * this->B.R() / particle->getMomentum().R();
-      // const double phi   = TMath::ATan2(position.Y(), position.X());
-      // const double t     = time;
-      // deltaTime          = (omega * t - phi) / omega;
-      // deltaPropagatedLength =
-      //     radius * TMath::Abs(TMath::ATan2(TMath::Sin(omega * deltaTime), TMath::Cos(omega * deltaTime)));
-      // hitPosition = particle->getPosition() + radius * TMath::Cos(omega * deltaTime) * velocity
-      //             + radius * TMath::Sin(omega * deltaTime) * cyclotronDirection;
-      // particle->setPosition(hitPosition);
+        exit(EXIT_FAILURE);
+      }
+
+      // X-Z plane: (x, z) = (x_c, z_c) + r * (cos(omega * t + theta0), sin(omega * t + theta0))
+      // (x_c, z_c) is the center of the circle, r is the radius of the circle, omega is the angular velocity
+      // theta0 is associated with the initial position
+
+      double deltaPropagatedLengthXZ = 0, hitPositionX = 0, hitPositionZ = 0, velocityX = 0, velocityZ = 0;
+      {
+        const ROOT::Math::XYVector velocity0(velocity.X(), velocity.Z()); // initial velocity in the X-Z plane
+        if (velocity0.R() < 1e-10) {
+          return linearPropagate(); // The velocity is too low, the particle will move in a straight line
+        }
+
+        const ROOT::Math::XYPoint position0(position.X(), position.Z()); // initial position in the X-Z plane
+        const double              _B = this->dB.Y(); // magnetic field (since the magnetic field is in the y direction)
+        const double              _y = scintillatorCounter.getLocation();
+
+        constexpr double conversionFactor__MeV_c_e_T2cm =
+            1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
+        constexpr double conversionFactor__cm_ns2c = 1e9 / TMath::Ccgs(); // conversion factor from cm/ns to c
+        const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (_B * abs(charge))
+                            * conversionFactor__MeV_c_e_T2cm;
+
+        ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
+        cyclotronDirection               = cyclotronDirection.Unit();
+        const ROOT::Math::XYPoint center = position0 - radius * cyclotronDirection;
+
+        const double theta0 = TMath::ATan2(position0.Y() - center.Y(), position0.X() - center.X());
+        const double omega  = velocity0.R() / radius;
+
+        double angle = TMath::ASin((_y - center.Y()) / radius) - theta0;
+
+        if (std::isnan(angle) || angle < 0) {
+          if (Config::enableWarning) {
+            printf("[Warning] Cannot hit any more scintillator counters! The velocity might be too low!\n");
+          }
+
+          return false;
+        }
+
+        deltaTime               = angle / omega;
+        deltaPropagatedLengthXZ = radius * angle;
+        hitPositionX            = center.X() + radius * TMath::Cos(omega * deltaTime + theta0);
+        hitPositionZ            = _y;
+        velocityX               = -radius * omega * TMath::Sin(omega * deltaTime + theta0);
+        velocityZ               = radius * omega * TMath::Cos(omega * deltaTime + theta0);
+      }
+
+      // Y direction: y = y0 + vy * t
+      const double deltaPropagatedLengthY = velocity.Y() * deltaTime;
+      const double hitPositionY           = position.Y() + deltaPropagatedLengthY;
+
+      deltaPropagatedLength = TMath::Sqrt(
+          deltaPropagatedLengthXZ * deltaPropagatedLengthXZ + deltaPropagatedLengthY * deltaPropagatedLengthY
+      ); // NOTE: this method is ONLY valid for uniform motion
+
+      hitPosition = ROOT::Math::XYZPoint(hitPositionX, hitPositionY, hitPositionZ);
+      particle->setPosition(hitPosition);
+      particle->setDirection(ROOT::Math::XYZVector(velocityX, velocity.Y(), velocityZ));
+
+      return true;
+    };
+
+    if (!charge || this->dB.R() < 1e-10 || position.Z() < initialZ) {
+      if (!linearPropagate())
+        break; // Magnetic field influence is negligible, the particle will move in a straight line
+    } else {
+      if (!spiralPropagate()) break; // Magnetic field is not zero, the particle will move in a spiral
     }
 
     double particleEnergyLoss = 0;
@@ -180,10 +208,10 @@ void Detector::plotDeltaTime(
   Detector_plotDeltaTimeCanvas->SetGrid();
   Detector_plotDeltaTimeCanvas->cd();
 
-  TGraph *graph = new TGraph(this->scintillatorCounters.size());
+  TGraph *graph = new TGraph(this->dScintillatorCounters.size());
   graph->SetTitle(";L [cm];#Deltat [ns]");
 
-  for (int i = 0; i < this->scintillatorCounters.size(); ++i) try {
+  for (size_t i = 0; i < this->dScintillatorCounters.size(); ++i) try {
       graph->SetPoint(
           i,
           hitsDataWithEnergyLoss.at(i).hitLength,
@@ -192,7 +220,7 @@ void Detector::plotDeltaTime(
     } catch (const std::out_of_range &e) {
       if (Config::enableWarning)
         printf(
-            "[Warning] Seems like the particle has not hit the scintillator counter since counter %d! Only plotting "
+            "[Warning] Seems like the particle has not hit the scintillator counter since counter %ld! Only plotting "
             "the hitted scintillator counters!\n",
             i
         );
@@ -230,14 +258,14 @@ void Detector::plotDeltaTime(
 }
 
 HitsData *Detector::measure(const HitsData &hitsData) const {
-  HitsData *measuresData = MemoryPool::getDetector_detect_detectedsData(this->scintillatorCounters.size());
+  HitsData *measuresData = MemoryPool::getDetector_detect_detectedsData(this->dScintillatorCounters.size());
   *measuresData          = hitsData;
 
-  for (int i = 0; i < measuresData->size(); ++i) {
+  for (size_t i = 0; i < measuresData->size(); ++i) {
     if (Config::enableTimeResolution)
       measuresData->setHitTime(
           i,
-          Config::random->Gaus(measuresData->at(i).hitTime, this->scintillatorCounters.at(i).getTimeResolution())
+          Config::random->Gaus(measuresData->at(i).hitTime, this->dScintillatorCounters.at(i).getTimeResolution())
       );
 
     if (!Config::useRealEnergyLoss2Rec)
@@ -275,8 +303,8 @@ double Detector::reconstructUsingLinearMethod(const HitsData &measuresData) cons
 
   const double k = (n * sumLT - sumL * sumT) / denominator;
 
-  constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
-  const double     betaReciprocal   = k * conversionFactor;
+  constexpr double conversionFactor__ns_cm2_c = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
+  const double     betaReciprocal             = k * conversionFactor__ns_cm2_c;
 
   if (Config::enableDebug) printf("[Info] The reconstructed 1/beta using the linear method: %f\n", betaReciprocal);
 
@@ -324,8 +352,8 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
   legend->Draw();
 
   if (Config::enableDebug) {
-    constexpr double conversionFactor = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
-    const double     betaReciprocal   = f1->GetParameter(0) * conversionFactor;
+    constexpr double conversionFactor__ns_cm2_c = TMath::Ccgs() * 1e-9; // conversion factor from ns/cm to 1/c
+    const double     betaReciprocal             = f1->GetParameter(0) * conversionFactor__ns_cm2_c;
     printf("[Info] The reconstructed 1 / beta using the linear method: %f\n", betaReciprocal);
     printf("[Info] The real 1 / beta: %f\n", 1 / particle.getBeta());
   }
@@ -342,7 +370,7 @@ void Detector::plotReconstructDataUsingLinearMethod(const Particle &particle, co
 std::pair<double, double> Detector::distributionOfReconstruction(
     const Particle    &particle,
     const int          nReconstructions,
-    const bool         enableLinerMethod,
+    const bool         enableLinearMethod,
     const bool         enablePlot,
     const std::string &fileName
 ) const {
@@ -352,10 +380,10 @@ std::pair<double, double> Detector::distributionOfReconstruction(
 
   for (int i = 0; i < nReconstructions; ++i) {
     HitsData *hitsData =
-        MemoryPool::getDetector_distributionOfReconstruction_hitsData(this->scintillatorCounters.size());
+        MemoryPool::getDetector_distributionOfReconstruction_hitsData(this->dScintillatorCounters.size());
     *hitsData = *this->particleHitData(particle, true);
 
-    if (hitsData->size() != this->scintillatorCounters.size()) {
+    if (hitsData->size() != this->dScintillatorCounters.size()) {
       if (Config::enableWarning)
         printf(
             "[Warning] Cancel reconstruction No.%d since the particle has not hit all the scintillator counters!\n",
@@ -367,7 +395,8 @@ std::pair<double, double> Detector::distributionOfReconstruction(
     }
 
     double betaReciprocalReconstruction;
-    if (enableLinerMethod) betaReciprocalReconstruction = this->reconstructUsingLinearMethod(*this->measure(*hitsData));
+    if (enableLinearMethod)
+      betaReciprocalReconstruction = this->reconstructUsingLinearMethod(*this->measure(*hitsData));
     else
       betaReciprocalReconstruction = this->reconstructUsingNonLinearMethod(particle, *this->measure(*hitsData));
 
@@ -377,10 +406,10 @@ std::pair<double, double> Detector::distributionOfReconstruction(
   double deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation;
   {
     const HitsData *hitsData = this->particleHitData(particle, true, false);
-    int             n        = hitsData->size();
+    size_t             n        = hitsData->size();
 
     // adjust the beta of the particle to make sure it can hit all the scintillator counters
-    if (n != this->scintillatorCounters.size()) {
+    if (n != this->dScintillatorCounters.size()) {
       if (Config::enableWarning)
         printf(
             "[Warning] Cannot reconstruct 1 / beta with zero resolution and zero energy loss fluctuation since the "
@@ -396,13 +425,13 @@ std::pair<double, double> Detector::distributionOfReconstruction(
         particleTemp.setBeta(beta);
         hitsData = this->particleHitData(particleTemp, true, false);
         n        = hitsData->size();
-        if (n == this->scintillatorCounters.size()) betaMax = beta;
+        if (n == this->dScintillatorCounters.size()) betaMax = beta;
         else
           betaMin = beta;
       }
       if (betaMax >= 0.988) {
         printf("[Error] The minimum beta is too close to 1! The particle cannot hit all the scintillator counters!\n");
-        exit(1);
+        exit(EXIT_FAILURE);
       } else
         printf("[Info] The minimum beta of the particle that can hit all the scintillator counters: %f\n", betaMax);
 
@@ -418,7 +447,7 @@ std::pair<double, double> Detector::distributionOfReconstruction(
       n        = hitsData->size();
     }
 
-    if (enableLinerMethod)
+    if (enableLinearMethod)
       deltaBetaReciprocalWithZeroResolutionAndZeroEnergyLossFluctuation =
           betaReciprocalReal - this->reconstructUsingLinearMethod(*hitsData);
     else
@@ -510,7 +539,7 @@ TGraphErrors *Detector::deltaBetaReciprocal(
     const bool         enablePlot,
     const std::string &fileName
 ) const {
-  TCanvas *Detector_plotDeltaBetaReciprocalCanvas;
+  TCanvas *Detector_plotDeltaBetaReciprocalCanvas = nullptr;
   if (enablePlot) {
     Detector_plotDeltaBetaReciprocalCanvas =
         new TCanvas("Detector_plotDeltaBetaReciprocalCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)

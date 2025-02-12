@@ -15,13 +15,13 @@ ScintillatorCounters::ScintillatorCounters(
     const double    timeResolution,
     const Material &material
 )
-    : location(location), direction(direction), thickness(thickness), timeResolution(timeResolution),
-      material(material) {}
+    : sLocation(location), sDirection(direction), sThickness(thickness), sTimeResolution(timeResolution),
+      sMaterial(material) {}
 
 ScintillatorCounters::~ScintillatorCounters() {}
 
 double ScintillatorCounters::energyLoss(const Particle &particle) const {
-  return this->material.linearStoppingPower(particle) * this->thickness;
+  return this->sMaterial.linearStoppingPower(particle) * this->sThickness;
 }
 
 TMultiGraph *ScintillatorCounters::energyLoss(
@@ -46,7 +46,7 @@ TMultiGraph *ScintillatorCounters::energyLoss(
   TGraph *graphEnergyLoss = new TGraph(nPoints + 1);
   graphEnergyLoss->SetLineColor(kBlue);
 
-  TGraph *graphKineticEnergy;
+  TGraph *graphKineticEnergy = nullptr;
   if (enableKineticEnergy) {
     graphKineticEnergy = new TGraph(nPoints + 1);
     graphKineticEnergy->SetLineColor(kRed);
@@ -107,47 +107,46 @@ double ScintillatorCounters::LandauMostProbableEnergyLoss_xi(const Particle &par
   constexpr double K = 0.307075; // MeV mol^-1 cm^2 (4 * pi * N_A * r_e^2 * m_e * c^2, coefficient for dE/dx)
   const int        z = particle.getCharge(
   ); // charge number of the particle (since we use charge in units of e, the charge number is the same as the charge)
-  const double x = this->thickness * this->material.getDensity(); // x in g/cm^2
-  const double Z = this->material.getZ();
-  const double A = this->material.getA();
+  const double x = this->sThickness * this->sMaterial.getDensity(); // x in g/cm^2
+  const double Z = this->sMaterial.getZ();
+  const double A = this->sMaterial.getA();
 
   return (K / 2) * (Z / A) * (z * z) * (x / (beta * beta));
 }
 
 double ScintillatorCounters::LandauMostProbableEnergyLoss(const Particle &particle) const {
   const double xi = this->LandauMostProbableEnergyLoss_xi(particle);
-  if (xi == 0) return 0;
+  if (!xi) return 0;
 
-  constexpr double massElectron = 0.51099895000;                // Rest mass of the electron in MeV/c^2
-  constexpr double j            = 0.200;                        // Constant for the Landau most probable energy loss
-  const double     I            = this->material.getI() * 1e-6; // convert eV to MeV
+  constexpr double massElectron = 0.51099895000;                 // Rest mass of the electron in MeV/c^2
+  constexpr double j            = 0.200;                         // Constant for the Landau most probable energy loss
+  const double     I            = this->sMaterial.getI() * 1e-6; // convert eV to MeV
   const double     beta         = particle.getBeta();
   const double     gamma        = particle.getGamma();
 
   const double partA = 2 * massElectron * beta * beta * gamma * gamma / I;
   const double partB = xi / I;
 
-  return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->material.delta(beta, gamma));
+  return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->sMaterial.delta(beta, gamma));
 }
 
 double ScintillatorCounters::LandauMostProbableEnergyLoss(const double xi, const Particle &particle) const {
-  if (xi == 0) return 0;
+  if (!xi) return 0;
 
-  constexpr double massElectron = 0.51099895000;                // Rest mass of the electron in MeV/c^2
-  constexpr double j            = 0.200;                        // Constant for the Landau most probable energy loss
-  const double     I            = this->material.getI() * 1e-6; // convert eV to MeV
+  constexpr double massElectron = 0.51099895000;                 // Rest mass of the electron in MeV/c^2
+  constexpr double j            = 0.200;                         // Constant for the Landau most probable energy loss
+  const double     I            = this->sMaterial.getI() * 1e-6; // convert eV to MeV
   const double     beta         = particle.getBeta();
   const double     gamma        = particle.getGamma();
 
   const double partA = 2 * massElectron * beta * beta * gamma * gamma / I;
   const double partB = xi / I;
 
-  return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->material.delta(beta, gamma));
+  return xi * (TMath::Log(partA) + TMath::Log(partB) + j - beta * beta - this->sMaterial.delta(beta, gamma));
 }
 
 void ScintillatorCounters::plotEnergyLossFluctuation(
     Particle           particle,
-    const int          nPoints,
     const bool         enableKineticEnergy,
     TPad              *pad,
     const std::string &fileName
@@ -158,7 +157,7 @@ void ScintillatorCounters::plotEnergyLossFluctuation(
 
   const double kineticEnergy = particle.getEnergy() - particle.getMass0();
 
-  TF1 *landau;
+  TF1 *landau = nullptr;
   if (xi) {
     if (enableKineticEnergy)
       landau = new TF1(

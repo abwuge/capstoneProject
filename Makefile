@@ -7,8 +7,8 @@ SRCS := $(wildcard $(SRC_DIR)/*.cpp)
 OBJS := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
 
 CXX := g++
-CXXFLAGS := -I$(INC_DIR) `root-config --cflags` -O3 -flto=auto
-LDFLAGS := `root-config --libs` -lvdt
+CXXFLAGS := -I$(INC_DIR) `root-config --cflags` -O3 -funroll-loops -Wall -Wextra -Wpedantic -Wshadow
+LDFLAGS := `root-config --libs` -lvdt -flto=auto -Wl,--as-needed
 
 $(NAME): $(OBJS)
 	$(CXX) $(OBJS) -o $@ $(LDFLAGS)

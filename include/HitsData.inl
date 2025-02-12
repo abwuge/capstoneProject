@@ -16,7 +16,7 @@ inline const std::vector<double> &HitsData::getHitsLength() const { return hitsL
 
 inline const std::vector<double> &HitsData::getHitsEnergyLoss() const { return hitsEnergyLoss; };
 
-inline const std::vector<ROOT::Math::XYZVector> &HitsData::getHitsPosition() const { return hitsPosition; };
+inline const std::vector<ROOT::Math::XYZPoint> &HitsData::getHitsPosition() const { return hitsPosition; };
 
 inline size_t HitsData::size() const { return hitsData.size(); }
 
@@ -51,7 +51,7 @@ inline void HitsData::setHitEnergyLoss(size_t index, double hitEnergyLoss) {
   hitsData.at(index).hitEnergyLoss = hitEnergyLoss;
 }
 
-inline void HitsData::setHitPosition(size_t index, const ROOT::Math::XYZVector &hitPosition) {
+inline void HitsData::setHitPosition(size_t index, const ROOT::Math::XYZPoint &hitPosition) {
   hitsPosition.at(index)         = hitPosition;
   hitsData.at(index).hitPosition = hitPosition;
 }
@@ -60,7 +60,7 @@ inline void HitsData::push_back(
     const double                 hitTime,
     const double                 hitLength,
     const double                 hitEnergyLoss,
-    const ROOT::Math::XYZVector &hitPosition
+    const ROOT::Math::XYZPoint &hitPosition
 ) {
   hitsData.push_back({hitTime, hitLength, hitEnergyLoss, hitPosition});
   hitsTime.push_back(hitTime);

@@ -1,24 +1,12 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
+#include <Math/Point3D.h>
 #include <Math/Vector3D.h>
 
 #include "Config.h"
 
 class Particle {
-protected:
-  int    charge; // Charge of the particle in e
-  double mass0;  // Rest mass of the particle in MeV/c^2
-  double mass;   // Mass of the particle in MeV/c^2
-  // Question: I have used `double &energy = mass` to ensure that the energy is always equal to the mass, but it is not
-  // working as expected. Why?
-  double                energy;   // Energy of the particle in MeV (energy = mass in natural units)
-  double                gamma;    // Lorentz factor of the particle
-  double                beta;     // Beta of the particle
-  ROOT::Math::XYZVector position; // Position of the particle in cm
-  ROOT::Math::XYZVector momentum; // Momentum of the particle in MeV/c
-  ROOT::Math::XYZVector velocity; // Velocity of the particle in c
-
 public:
   /* BEGIN Constructor & Destructor */
 
@@ -40,7 +28,7 @@ public:
       const int                    charge,
       const double                 mass0,
       const ROOT::Math::XYZVector &momentum,
-      const ROOT::Math::XYZVector &position
+      const ROOT::Math::XYZPoint  &position
   );
 
   /**
@@ -55,7 +43,7 @@ public:
       const int                    charge,
       const double                 mass0,
       double                       beta,
-      const ROOT::Math::XYZVector &position,
+      const ROOT::Math::XYZPoint  &position,
       const ROOT::Math::XYZVector &direction = ROOT::Math::XYZVector(0, 0, 1)
   );
 
@@ -98,7 +86,7 @@ public:
   /**
    * @brief Get the position of the particle
    */
-  ROOT::Math::XYZVector getPosition() const;
+  ROOT::Math::XYZPoint getPosition() const;
 
   /**
    * @brief Get the momentum of the particle
@@ -147,7 +135,7 @@ public:
    * @param position Position of the particle in cm
    * @return True if the position is set successfully, false otherwise
    */
-  bool setPosition(const ROOT::Math::XYZVector &position);
+  bool setPosition(const ROOT::Math::XYZPoint &position);
 
   /**
    * @brief Set the momentum of the particle
@@ -163,6 +151,13 @@ public:
    */
   bool setVelocity(const ROOT::Math::XYZVector &velocity);
 
+  /**
+   * @brief Set the moving direction of the particle
+   * @param direction Moving direction of the particle
+   * @return True if the moving direction is set successfully, false otherwise
+   */
+  bool setDirection(ROOT::Math::XYZVector direction);
+
   /* END Setters */
 
   /* BEGIN Methods */
@@ -176,25 +171,37 @@ public:
   double Wmax() const;
 
   /* END Methods */
+
+protected:
+  int                   pCharge;    // Charge of the particle in e
+  double                pMass0;     // Rest mass of the particle in MeV/c^2
+  double                pMass;      // Mass of the particle in MeV/c^2
+  double                pEnergy;    // Energy of the particle in MeV (energy = mass in natural units)
+  double                pGamma;     // Lorentz factor of the particle
+  double                pBeta;      // Beta of the particle
+  ROOT::Math::XYZVector pMomentum;  // Momentum of the particle in MeV/c
+  ROOT::Math::XYZVector pVelocity;  // Velocity of the particle in c
+  ROOT::Math::XYZPoint  pPosition;  // Position of the particle in cm
+  ROOT::Math::XYZVector pDirection; // Moving direction of the particle
 };
 
-inline int Particle::getCharge() const { return this->charge; }
+inline int Particle::getCharge() const { return this->pCharge; }
 
-inline double Particle::getMass0() const { return this->mass0; }
+inline double Particle::getMass0() const { return this->pMass0; }
 
-inline double Particle::getMass() const { return this->mass; }
+inline double Particle::getMass() const { return this->pMass; }
 
-inline double Particle::getEnergy() const { return this->energy; }
+inline double Particle::getEnergy() const { return this->pEnergy; }
 
-inline double Particle::getGamma() const { return this->gamma; }
+inline double Particle::getGamma() const { return this->pGamma; }
 
-inline double Particle::getBeta() const { return this->beta; }
+inline double Particle::getBeta() const { return this->pBeta; }
 
-inline ROOT::Math::XYZVector Particle::getPosition() const { return this->position; }
+inline ROOT::Math::XYZPoint Particle::getPosition() const { return this->pPosition; }
 
-inline ROOT::Math::XYZVector Particle::getMomentum() const { return this->momentum; }
+inline ROOT::Math::XYZVector Particle::getMomentum() const { return this->pMomentum; }
 
-inline ROOT::Math::XYZVector Particle::getVelocity() const { return this->velocity; }
+inline ROOT::Math::XYZVector Particle::getVelocity() const { return this->pVelocity; }
 
 inline bool Particle::setEnergy(const double energy) { return this->setMass(energy); }
 

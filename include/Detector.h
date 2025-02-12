@@ -1,10 +1,10 @@
 // Coordinate system definition
-/*******************************
- *           ·------- x         *
- *          /|                  *
- *         / |                  *
- *        y  |                  *
- *           z                  *
+/********************************
+ *          x -------·          *
+ *                  /|          *
+ *                 / |          *
+ *                y  |          *
+ *                   z          *
  *******************************/
 
 #ifndef DETECTOR_H
@@ -58,20 +58,6 @@ public:
   /* END Getters */
 
   /* BEGIN Methods */
-
-  /**
-   * @brief Calculate the cyclotron radius of the particle in the magnetic field
-   * @param particle Particle
-   * @return Cyclotron radius of the particle in the magnetic field
-   */
-  double particleCyclotronRadius(const Particle &particle) const;
-
-  /**
-   * @brief Calculate the direction of the particle in the magnetic field
-   * @param particle Particle
-   * @return Direction of the particle in the magnetic field
-   */
-  ROOT::Math::XYZVector particleCyclotronDirection(const Particle &particle) const;
 
   /**
    * @brief Calculate the hit times and positions of the particle in this detector
@@ -146,7 +132,7 @@ public:
    * @brief Calculate the distribution of the reconstructed 1/beta of the particle in this detector
    * @param particle Incident particle
    * @param nReconstructions Number of reconstructions
-   * @param enableLinerMethod Enable reconstruction using the linear method
+   * @param enableLinearMethod Enable reconstruction using the linear method
    * @param enablePlot Enable plot
    * @param fileName Name of the file to save the plot
    * @return Mean and standard deviation of the distribution of the reconstructed 1/beta of the particle
@@ -154,7 +140,7 @@ public:
   std::pair<double, double> distributionOfReconstruction(
       const Particle    &particle,
       const int          nReconstructions  = 10000,
-      const bool         enableLinerMethod = false,
+      const bool         enableLinearMethod = false,
       const bool         enablePlot        = true,
       const std::string &fileName          = "test.png"
   ) const;
@@ -198,17 +184,17 @@ public:
   /* END Methods */
 
 protected:
-  std::vector<ScintillatorCounters> scintillatorCounters; // Scintillator counters
-  ROOT::Math::XYZVector             B;                    // Magnetic field
+  std::vector<ScintillatorCounters> dScintillatorCounters; // Scintillator counters
+  ROOT::Math::XYZVector             dB;                    // Magnetic field
 };
 
-inline double Detector::getMinZ() const { return this->scintillatorCounters.front().getLocation(); }
+inline double Detector::getMinZ() const { return this->dScintillatorCounters.front().getLocation(); }
 
 inline std::vector<ScintillatorCounters> Detector::getScintillatorCounters() const {
-  return this->scintillatorCounters;
+  return this->dScintillatorCounters;
 }
 
-inline ROOT::Math::XYZVector Detector::getB() const { return this->B; }
+inline ROOT::Math::XYZVector Detector::getB() const { return this->dB; }
 
 inline HitsData *Detector::measure(const Particle &particle) const {
   return this->measure(*this->particleHitData(particle, true));

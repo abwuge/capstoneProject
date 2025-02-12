@@ -4,6 +4,7 @@
 #include <tuple>
 #include <vector>
 
+#include <Math/Point3D.h>
 #include <Math/Vector3D.h>
 #include <TAxis.h>
 #include <TCanvas.h>
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]) {
   constexpr int    chargeLi6    = 3;              // Charge of Li6 in e
   constexpr double mass0Li6     = 6.01512289 * u; // Rest mass of Li6 in MeV/c^2 (from https://ciaaw.org/lithium.htm)
   constexpr double startBetaLi6 = 0.4;            // Initial beta of Li6
-  const ROOT::Math::XYZVector startPositionLi6(0, 0, TOF.getMinZ()); // Initial position of Li6 in cm
+  const ROOT::Math::XYZPoint startPositionLi6(0, 0, TOF.getMinZ());  // Initial position of Li6 in cm
 
   Particle Li6(chargeLi6, mass0Li6, startBetaLi6, startPositionLi6); // Initial Li6
   /* END Particle Li6 properties */
@@ -92,10 +93,11 @@ int main(int argc, char *argv[]) {
   constexpr double mass0Proton =
       1.67262192595e-27 * kg;        // Rest mass of proton in MeV/c^2
                                      //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
-  constexpr double            startBetaProton = 0.4;                                // Initial beta of proton
-  const ROOT::Math::XYZVector startPositionProton(0, 0, TOF.getMinZ());             // Initial position of proton in cm
+  constexpr double            startBetaProton = 0.4;                    // Initial beta of proton
+  const ROOT::Math::XYZPoint  startPositionProton(0, 0, TOF.getMinZ()); // Initial position of proton in cm
+  const ROOT::Math::XYZVector directionProton(0, 0, 1);                 // Direction of proton
 
-  Particle proton(chargeProton, mass0Proton, startBetaProton, startPositionProton); // Initial proton
+  Particle proton(chargeProton, mass0Proton, startBetaProton, startPositionProton, directionProton); // Initial proton
   /* END Particle Proton properties */
 
   // Draw the energy loss of the particle in the scintillator counters using Bethe-Bloch and Landau
@@ -153,7 +155,7 @@ int main(int argc, char *argv[]) {
 
     if (Config::enableDebug) printf("[Info] Li6 energy: %f MeV, velocity: %f c\n", Li6.getEnergy(), Li6.getBeta());
     for (int i = 0; i < 4; ++i) {
-      EJ_200.at(0).plotEnergyLossFluctuation(Li6, 100000, true, (TPad *)canvas->GetPad(i + 1));
+      EJ_200.at(0).plotEnergyLossFluctuation(Li6, true, (TPad *)canvas->GetPad(i + 1));
       const double xi = EJ_200.at(i).LandauMostProbableEnergyLoss_xi(Li6);
       const double el = EJ_200.at(i).LandauMostProbableEnergyLoss(xi, Li6);
       if (Config::enableEnergyLossFluctuation) Li6.setEnergy(Li6.getEnergy() - Config::random->Landau(el, 4.018 * xi));
@@ -192,7 +194,7 @@ int main(int argc, char *argv[]) {
 
         double energy = particle.getEnergy() - particle.getMass0();
         histograms.at(i)->Fill(energy);
-        if (energy == 0) break;
+        if (energy < 1e-10) break;
         cnt[i]++;
       }
     };
@@ -221,9 +223,10 @@ int main(int argc, char *argv[]) {
 
   // TOF.plotReconstructDataUsingLinearMethod(Li6, "test/plotReconstructDataUsingLinearMethod.png");
 
-  // TOF.distributionOfReconstruction(Li6, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
   if (false) {
     proton.setBeta(0.4);
+    TOF.distributionOfReconstruction(proton, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
+
     TOF.distributionOfReconstruction(
         proton,
         10000,

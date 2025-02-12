@@ -40,7 +40,7 @@ inline bool ThreadPool::stealTask(size_t thief_id, std::function<void()> &task) 
 }
 
 inline void ThreadPool::workerFunction(size_t thread_id) {
-  setAffinity(std::this_thread::get_id(), thread_id);
+  setAffinity(thread_id);
 
   while (true) {
     std::function<void()> task;
@@ -77,7 +77,7 @@ inline ThreadPool::ThreadPool(size_t threads) : stop(false), numThreads(threads)
   for (size_t i = 0; i < threads; ++i) workers.emplace_back([this, i] { workerFunction(i); });
 }
 
-inline void ThreadPool::setAffinity(std::thread::id thread_id, int cpu_id) {
+inline void ThreadPool::setAffinity(int cpu_id) {
   pthread_t thread = pthread_self();
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);

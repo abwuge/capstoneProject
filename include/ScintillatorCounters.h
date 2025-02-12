@@ -11,14 +11,6 @@
 #include "Particle.h"
 
 class ScintillatorCounters {
-protected:
-  double location;    // z-coordinate of the scintillator counter in cm (assuming it is an infinite plane in the x and y
-                      // directions)
-  bool     direction; // Indicates whether the detector detects x (true) or y (false) coordinates
-  double   thickness; // Thickness of the scintillator counter in cm
-  double   timeResolution; // Time resolution of the scintillator counter in ns
-  Material material;       // Material of the scintillator counter
-
 public:
   /* BEGIN Constructor & Destructor */
 
@@ -132,29 +124,35 @@ public:
    * This method uses TCanvas! So you need be CAREFUL where you call this method or remember to use cd() method in
    * TCanvas! Otherwise, you may get a blank plot with your TCanvas!
    * @param particle Particle
-   * @param nPoints Number of points to plot (Infact, nPoints + 1 points will be plotted)
    * @param enableKineticEnergy Enable kinetic energy in the plot
    * @param fileName Name of the file to save the plot
    */
   void plotEnergyLossFluctuation(
       Particle           particle,
-      const int          nPoints             = 10000,
       const bool         enableKineticEnergy = true,
       TPad              *pad                 = nullptr,
       const std::string &fileName            = "test.png"
   ) const;
 
   /* END Methods */
+
+protected:
+  double sLocation; // z-coordinate of the scintillator counter in cm (assuming it is an infinite plane in the x and y
+                    // directions)
+  bool     sDirection;      // Indicates whether the detector detects x (true) or y (false) coordinates
+  double   sThickness;      // Thickness of the scintillator counter in cm
+  double   sTimeResolution; // Time resolution of the scintillator counter in ns
+  Material sMaterial;       // Material of the scintillator counter
 };
 
-inline double ScintillatorCounters::getLocation() const { return this->location; }
+inline double ScintillatorCounters::getLocation() const { return this->sLocation; }
 
-inline bool ScintillatorCounters::getDirection() const { return this->direction; }
+inline bool ScintillatorCounters::getDirection() const { return this->sDirection; }
 
-inline double ScintillatorCounters::getThickness() const { return this->thickness; }
+inline double ScintillatorCounters::getThickness() const { return this->sThickness; }
 
-inline double ScintillatorCounters::getTimeResolution() const { return this->timeResolution; }
+inline double ScintillatorCounters::getTimeResolution() const { return this->sTimeResolution; }
 
-inline Material ScintillatorCounters::getMaterial() const { return this->material; }
+inline Material ScintillatorCounters::getMaterial() const { return this->sMaterial; }
 
 #endif /* SCINTILLATORCOUNTERS_H */

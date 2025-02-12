@@ -18,19 +18,6 @@ enum class MaterialName {
 };
 
 class Material {
-protected:
-  double density;      // Density of the material in g/cm^3
-  double Z;            // Atomic number of the material
-  double A;            // Atomic mass of the material in g/mol
-  double I;            // Mean excitation energy of the material in eV
-  double hbarOmegaP;   // Plasma energy of the material in eV
-  double DECa;         // Density effect correction parameter a
-  double DECk;         // Density effect correction parameter k
-  double DECx0;        // Density effect correction parameter \x_0
-  double DECx1;        // Density effect correction parameter \x_1
-  double DECdelta0;    // Density effect correction parameter \delta_0
-  double DECoverlineC; // Density effect correction parameter \overline{C}
-
 public:
   /* BEGIN Constructor & Destructor */
 
@@ -128,17 +115,30 @@ public:
   double linearStoppingPower(const Particle &particle) const;
 
   /* END Methods */
+
+protected:
+  double mDensity;      // Density of the material in g/cm^3
+  double mZ;            // Atomic number of the material
+  double mA;            // Atomic mass of the material in g/mol
+  double mI;            // Mean excitation energy of the material in eV
+  double m_hbarOmegaP;   // Plasma energy of the material in eV
+  double mDECa;         // Density effect correction parameter a
+  double mDECk;         // Density effect correction parameter k
+  double mDECx0;        // Density effect correction parameter \x_0
+  double mDECx1;        // Density effect correction parameter \x_1
+  double mDECdelta0;    // Density effect correction parameter \delta_0
+  double mDECoverlineC; // Density effect correction parameter \overline{C}
 };
 
-inline double Material::getDensity() const { return this->density; }
+inline double Material::getDensity() const { return this->mDensity; }
 
-inline double Material::getZ() const { return this->Z; }
+inline double Material::getZ() const { return this->mZ; }
 
-inline double Material::getA() const { return this->A; }
+inline double Material::getA() const { return this->mA; }
 
-inline double Material::getI() const { return this->I; }
+inline double Material::getI() const { return this->mI; }
 
-inline double Material::getHbarOmegaP() const { return this->hbarOmegaP; }
+inline double Material::getHbarOmegaP() const { return this->m_hbarOmegaP; }
 
 const std::unordered_map<MaterialName, Material> materials = {
     /* TODO: IDK if delta(x_0) is delta_0 */

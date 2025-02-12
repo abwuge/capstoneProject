@@ -80,7 +80,7 @@ protected:
    * @param thread_id Thread identifier
    * @param cpu_id CPU core ID
    */
-  inline void setAffinity(std::thread::id thread_id, int cpu_id);
+  inline void setAffinity(int cpu_id);
 
   // Prevent copying
   inline ThreadPool(const ThreadPool &)            = delete;

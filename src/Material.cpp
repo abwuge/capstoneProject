@@ -15,19 +15,19 @@ Material::Material(
     const double DECdelta0,
     const double DECoverlineC
 )
-    : density(density), Z(Z), A(A), I(I), hbarOmegaP(hbarOmegaP), DECa(DECa), DECk(DECk), DECx0(DECx0), DECx1(DECx1),
-      DECdelta0(DECdelta0), DECoverlineC(DECoverlineC) {}
+    : mDensity(density), mZ(Z), mA(A), mI(I), m_hbarOmegaP(hbarOmegaP), mDECa(DECa), mDECk(DECk), mDECx0(DECx0),
+      mDECx1(DECx1), mDECdelta0(DECdelta0), mDECoverlineC(DECoverlineC) {}
 
 Material::~Material() {}
 
 double Material::delta(const double beta, const double gamma) const {
   const double x = TMath::Log10(beta * gamma);
-  if (x <= this->DECx0) {
-    return this->DECdelta0 ? this->DECdelta0 * TMath::Power(10, 2 * (x - this->DECx0)) : 0;
-  } else if (x <= this->DECx1) {
-    return 2 * TMath::Log(10) * x - this->DECoverlineC + this->DECa * TMath::Power(this->DECx1 - x, this->DECk);
+  if (x <= this->mDECx0) {
+    return this->mDECdelta0 ? this->mDECdelta0 * TMath::Power(10, 2 * (x - this->mDECx0)) : 0;
+  } else if (x <= this->mDECx1) {
+    return 2 * TMath::Log(10) * x - this->mDECoverlineC + this->mDECa * TMath::Power(this->mDECx1 - x, this->mDECk);
   } else {
-    return 2 * TMath::Log(10) * x - this->DECoverlineC;
+    return 2 * TMath::Log(10) * x - this->mDECoverlineC;
   }
 }
 
@@ -58,9 +58,9 @@ double Material::massStoppingPower(const Particle &particle) const {
   const double beta2 = beta * beta;
 
   // <-dE/dx> = partA * [0.5 * ln(partB) - beta2 - 0.5 * delta(beta, gamma)]
-  const double partA = K * (z * z) * (this->Z / this->A) * (1 / beta2);
+  const double partA = K * (z * z) * (this->mZ / this->mA) * (1 / beta2);
   const double partB = 1e12 * (2 * electronMass * beta * beta * gamma * gamma * particle.Wmax())
-                     / (this->I * this->I); // electronMass in MeV/c^2, Wmax in MeV, but, I in eV, so multiply by 1e12
+                     / (this->mI * this->mI); // electronMass in MeV/c^2, Wmax in MeV, but, I in eV, so multiply by 1e12
 
   if (Config::enableDebug) printf("[Info] W_max: %g, partA: %g, partB: %g\n", particle.Wmax(), partA, partB);
 
@@ -68,5 +68,5 @@ double Material::massStoppingPower(const Particle &particle) const {
 }
 
 double Material::linearStoppingPower(const Particle &particle) const {
-  return this->density * this->massStoppingPower(particle);
+  return this->mDensity * this->massStoppingPower(particle);
 }
