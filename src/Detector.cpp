@@ -13,10 +13,12 @@
 #include <TF1.h>
 #include <TFitResult.h>
 #include <TGraph.h>
+#include <TGraph2D.h>
 #include <TH1F.h>
 #include <TLegend.h>
 #include <TLine.h>
 #include <TMath.h>
+#include <TMultiGraph.h>
 #include <TString.h>
 
 #include "MemoryPool.h"
@@ -58,7 +60,7 @@ HitsData *Detector::particleHitData(
 
     auto linearPropagate = [&]() -> bool {
       if (velocity.Z() <= 0) {
-        if (Config::enableWarning)
+        if (Config::enableWarningAtDebug)
           printf(
               "[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or "
               "negative!\n"
@@ -117,7 +119,7 @@ HitsData *Detector::particleHitData(
 
         double angle = TMath::ASin((y - center.Y()) / radius) - theta0;
 
-        if (std::isnan(angle) || angle < 0) {
+        if (std::isnan(angle) || angle < -1e-10) {
           if (Config::enableWarning) {
             printf("[Warning] Cannot hit any more scintillator counters! The velocity might be too low!\n");
           }
@@ -185,7 +187,6 @@ HitsData *Detector::particleHitData(
     }
 
     time += deltaTime, propagationLength += deltaPropagatedLength;
-    printf("[Info] Time: %f ns, Propagation length: %f cm\n", time, propagationLength);
     hitsData->push_back(time, propagationLength, particleEnergyLoss, hitPosition);
   }
 
@@ -654,4 +655,144 @@ Detector::reconstructUsingNonLinearMethod(const Particle &particleOrignal, const
   }
 
   return betaReciprocal;
+}
+
+void Detector::plotParticleTrajectory(Particle particle, const std::string &fileName) const {
+  TCanvas *canvas = new TCanvas("Detector_plotParticleTrajectoryCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
+  canvas->Divide(2, 2);
+
+  const HitsData *hitsData = this->particleHitData(particle, true, false);
+  const int       nPoints  = hitsData->size();
+  if (nPoints < 2) {
+    if (Config::enableWarning) { printf("[Warning] Not enough points to plot trajectory (nPoints = %d)\n", nPoints); }
+    return;
+  }
+
+  TMultiGraph *multiGraphXY = new TMultiGraph();
+  TMultiGraph *multiGraphYZ = new TMultiGraph();
+  TMultiGraph *multiGraphXZ = new TMultiGraph();
+
+  const int totalSamples = (nPoints - 1) * 100;
+  TGraph2D *graph3D      = new TGraph2D(totalSamples);
+  int       pointIndex   = 0;
+
+  for (int i = 0; i < nPoints - 1; ++i) {
+    const ROOT::Math::XYZPoint &pos1 = hitsData->at(i).hitPosition;
+    const ROOT::Math::XYZPoint &pos2 = hitsData->at(i + 1).hitPosition;
+
+    const double energyLoss = hitsData->at(i).hitEnergyLoss;
+    particle.setEnergy(particle.getEnergy() - energyLoss);
+    if (Config::enableDebug) {
+      printf("[Info] Energy loss at point %d: %f MeV, Remaining energy: %f MeV\n", i, energyLoss, particle.getEnergy());
+    }
+
+    const int nSamples = 100;
+    double   *xTrack   = new double[nSamples];
+    double   *yTrack   = new double[nSamples];
+    double   *zTrack   = new double[nSamples];
+
+    constexpr double            conversionFactor__c2cm_ns = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
+    const ROOT::Math::XYZVector velocity                  = particle.getVelocity() * conversionFactor__c2cm_ns;
+    const int                   charge                    = particle.getCharge();
+    const bool                  hasMagneticField          = this->dB.R() >= 1e-10;
+
+    if (!charge || !hasMagneticField) {
+      for (int j = 0; j < nSamples; ++j) {
+        const double t = j / (nSamples - 1.0);
+        xTrack[j]      = pos1.X() + (pos2.X() - pos1.X()) * t;
+        yTrack[j]      = pos1.Y() + (pos2.Y() - pos1.Y()) * t;
+        zTrack[j]      = pos1.Z() + (pos2.Z() - pos1.Z()) * t;
+      }
+    } else {
+      const double B = this->dB.Y();
+
+      const ROOT::Math::XYVector velocity0(velocity.X(), velocity.Z());
+      if (velocity0.R() < 1e-10) {
+        for (int j = 0; j < nSamples; ++j) {
+          const double t = j / (nSamples - 1.0);
+          xTrack[j]      = pos1.X() + (pos2.X() - pos1.X()) * t;
+          yTrack[j]      = pos1.Y() + (pos2.Y() - pos1.Y()) * t;
+          zTrack[j]      = pos1.Z() + (pos2.Z() - pos1.Z()) * t;
+        }
+      } else {
+        constexpr double conversionFactor__MeV_c_e_T2cm = 1e6 / TMath::C() * 1e2; // conversion factor from MeV/c to cm
+        constexpr double conversionFactor__cm_ns2c      = 1e9 / TMath::Ccgs();    // conversion factor from cm/ns to c
+        const double     radius = particle.getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * abs(charge))
+                            * conversionFactor__MeV_c_e_T2cm;
+
+        ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
+        cyclotronDirection = cyclotronDirection.Unit();
+        const ROOT::Math::XYPoint center(
+            pos1.X() - radius * cyclotronDirection.X(),
+            pos1.Z() - radius * cyclotronDirection.Y()
+        );
+
+        const double theta0    = TMath::ATan2(pos1.Z() - center.Y(), pos1.X() - center.X());
+        const double omega     = velocity0.R() / radius;
+        const double deltaTime = (TMath::ASin((pos2.Z() - center.Y()) / radius) - theta0) / omega;
+
+        for (int j = 0; j < nSamples; ++j) {
+          const double t = j * deltaTime / (nSamples - 1.0);
+          xTrack[j]      = center.X() + radius * TMath::Cos(omega * t + theta0);
+          yTrack[j]      = pos1.Y() + velocity.Y() * t;
+          zTrack[j]      = center.Y() + radius * TMath::Sin(omega * t + theta0);
+        }
+
+        const double velocityX = -radius * omega * TMath::Sin(omega * deltaTime + theta0);
+        const double velocityZ = radius * omega * TMath::Cos(omega * deltaTime + theta0);
+        particle.setVelocity(ROOT::Math::XYZVector(velocityX, velocity.Y(), velocityZ) / conversionFactor__c2cm_ns);
+      }
+    }
+
+    TGraph *segmentXY = new TGraph(nSamples, xTrack, yTrack);
+    TGraph *segmentYZ = new TGraph(nSamples, zTrack, yTrack);
+    TGraph *segmentXZ = new TGraph(nSamples, zTrack, xTrack);
+
+    segmentXY->SetLineColor(kBlue);
+    segmentYZ->SetLineColor(kBlue);
+    segmentXZ->SetLineColor(kBlue);
+
+    multiGraphXY->Add(segmentXY);
+    multiGraphYZ->Add(segmentYZ);
+    multiGraphXZ->Add(segmentXZ);
+
+    for (int j = 0; j < nSamples; ++j) { graph3D->SetPoint(pointIndex++, xTrack[j], yTrack[j], zTrack[j]); }
+
+    delete[] xTrack;
+    delete[] yTrack;
+    delete[] zTrack;
+  }
+
+  canvas->cd(1);
+  multiGraphXY->SetTitle("XY Plane View (Top);X [cm];Y [cm]");
+  multiGraphXY->Draw("AL");
+  gPad->SetGrid();
+
+  canvas->cd(2);
+  multiGraphYZ->SetTitle("YZ Plane View (Side);Z [cm];Y [cm]");
+  multiGraphYZ->Draw("AL");
+  gPad->SetGrid();
+
+  canvas->cd(3);
+  multiGraphXZ->SetTitle("XZ Plane View (Front);Z [cm];X [cm]");
+  multiGraphXZ->Draw("AL");
+  gPad->SetGrid();
+
+  canvas->cd(4);
+  graph3D->SetTitle("3D View;X [cm];Y [cm];Z [cm]");
+  graph3D->SetLineColor(kBlue);
+  graph3D->SetLineWidth(2);
+  graph3D->Draw("LINE");
+
+  gPad->SetTheta(30);
+  gPad->SetPhi(30);
+  gPad->SetGrid();
+
+  canvas->SaveAs(fileName.c_str());
+
+  delete multiGraphXY;
+  delete multiGraphYZ;
+  delete multiGraphXZ;
+  delete graph3D;
+  delete canvas;
 }

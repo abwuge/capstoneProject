@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
   const ROOT::Math::XYZVector B(0, 0.14, 0); // Magnetic field in AMS-02 in Tesla
   // const ROOT::Math::XYZVector B(0, 0, 0); // used for testing
 
-  const Detector TOF(EJ_200, B);          // Time-of-flight detector in AMS-02
+  const Detector TOF(EJ_200, B); // Time-of-flight detector in AMS-02
   /* END Detector properties */
 
   constexpr double uIn_kg = 1.66053906660e-27; // Atomic mass unit in kg
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
   constexpr double mass0Proton =
       1.67262192595e-27 * kg;        // Rest mass of proton in MeV/c^2
                                      //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
-  constexpr double            startBetaProton = 0.5;                    // Initial beta of proton
+  constexpr double            startBetaProton = 0.42;                   // Initial beta of proton
   const ROOT::Math::XYZPoint  startPositionProton(0, 0, TOF.getMinZ()); // Initial position of proton in cm
   const ROOT::Math::XYZVector directionProton(1, 1, 1);                 // Direction of proton
 
@@ -222,6 +222,8 @@ int main(int argc, char *argv[]) {
   // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
 
   TOF.plotReconstructDataUsingLinearMethod(proton, "test/plotReconstructDataUsingLinearMethod.png");
+
+  TOF.plotParticleTrajectory(proton, "test/plotParticleTrajectory.png");
 
   if (false) {
     proton.setBeta(0.4);

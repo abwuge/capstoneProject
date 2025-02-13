@@ -181,6 +181,13 @@ public:
    */
   double reconstructUsingNonLinearMethod(const Particle &particleOrignal, const HitsData &measuresDataOrignal) const;
 
+  /**
+   * @brief Plot the trajectory of the particle in this detector
+   * @param particle Incident particle
+   * @param fileName Name of the file to save the plot
+   */
+  void plotParticleTrajectory(Particle particle, const std::string &fileName = "test.png") const;
+
   /* END Methods */
 
 protected:
