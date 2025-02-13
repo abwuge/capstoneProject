@@ -30,6 +30,7 @@
 
 > 作为参考：  
 > 作者使用的系统：Windows 11 专业工作站版（26100.2894）
+> 注意，作者在 [de779bbab71c05b85a56a5bb39faab48a7d5aaa9](commit/de779bbab71c05b85a56a5bb39faab48a7d5aaa9) 版本后，切换 VS Code 编辑器为 Cursor，您可以继续使用 VS Code 编辑器，或切换至 Cursor 编辑器。由于 Cursor 是 VS Code 的 fork 版本，切换几乎是无缝的。
 
 1. 前往[此处](https://code.visualstudio.com/Download)下载安装合适版本的 [Visual Studio Code (VS Code)](https://code.visualstudio.com/)。
 2. 打开VS Code，下载插件：[Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)、[WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl) 和 [Chinese (Simplified) (简体中文) Language Pack for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=MS-CEINTL.vscode-language-pack-zh-hans)（如果您更喜欢中文）。

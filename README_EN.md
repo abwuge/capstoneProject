@@ -30,6 +30,7 @@ The Alpha Magnetic Spectrometer (AMS) is a particle physics experiment operating
 
 > As a reference:  
 > Author's system: Windows 11 Pro for Workstations (26100.2894)
+> Note: After version [de779bbab71c05b85a56a5bb39faab48a7d5aaa9](commit/de779bbab71c05b85a56a5bb39faab48a7d5aaa9), the author switched from VS Code editor to Cursor. You can continue using VS Code editor, or switch to Cursor editor. Since Cursor is a fork version of VS Code, the switch is almost seamless.
 
 1. Go to [this link](https://code.visualstudio.com/Download) to download and install the appropriate version of [Visual Studio Code (VS Code)](https://code.visualstudio.com/).
 2. Open VS Code and download the following extensions: [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) and [WSL](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-wsl).
