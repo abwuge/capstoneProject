@@ -86,17 +86,22 @@ public:
   /**
    * @brief Get the position of the particle
    */
-  ROOT::Math::XYZPoint getPosition() const;
+  inline ROOT::Math::XYZPoint getPosition() const;
 
   /**
    * @brief Get the momentum of the particle
    */
-  ROOT::Math::XYZVector getMomentum() const;
+  inline ROOT::Math::XYZVector getMomentum() const;
 
   /**
    * @brief Get the velocity of the particle
    */
-  ROOT::Math::XYZVector getVelocity() const;
+  inline ROOT::Math::XYZVector getVelocity() const;
+
+  /**
+   * @brief Get the direction of the particle
+   */
+  inline ROOT::Math::XYZVector getDirection() const;
 
   /* END Getters */
 
@@ -202,6 +207,8 @@ inline ROOT::Math::XYZPoint Particle::getPosition() const { return this->pPositi
 inline ROOT::Math::XYZVector Particle::getMomentum() const { return this->pMomentum; }
 
 inline ROOT::Math::XYZVector Particle::getVelocity() const { return this->pVelocity; }
+
+inline ROOT::Math::XYZVector Particle::getDirection() const { return this->pDirection; }
 
 inline bool Particle::setEnergy(const double energy) { return this->setMass(energy); }
 
