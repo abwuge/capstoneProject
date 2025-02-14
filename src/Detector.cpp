@@ -104,18 +104,17 @@ HitsData *Detector::particleHitData(
         const double              B = this->dB.Y(); // magnetic field (since the magnetic field is in the y direction)
         const double              y = scintillatorCounter.getLocation();
 
+        // F = qv x B = ma, a is always towards the center of the circle
+        // v = (vx, vy, 0), B = (0, 0, B) -> qv x B = q(-vy, vx, 0)B
+        // so q(vy, -vx, 0) is the direction from the center to the particle
         constexpr double conversionFactor__MeV_c_e_T2cm =
             1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
         constexpr double conversionFactor__cm_ns2c = 1e9 / TMath::Ccgs(); // conversion factor from cm/ns to c
         const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * charge)
                             * conversionFactor__MeV_c_e_T2cm;
-
-        ROOT::Math::XYVector cyclotronDirection(
-            velocity0.Y(),
-            -velocity0.X()
-        ); // clockwise direction, from the center to the particle
+        ROOT::Math::XYVector cyclotronDirection(-velocity0.Y(), velocity0.X());
         cyclotronDirection               = cyclotronDirection.Unit();
-        const ROOT::Math::XYPoint center = position0 - radius * cyclotronDirection;
+        const ROOT::Math::XYPoint center = position0 + radius * cyclotronDirection; // radius * cyclotronDirection is the direction from the particle to the center
 
         const double theta0 = TMath::ATan2(position0.Y() - center.Y(), position0.X() - center.X());
         const double omega  = velocity0.R() / radius;
