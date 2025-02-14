@@ -1,11 +1,11 @@
 // Coordinate system definition
-/********************************
- *          x -------·          *
- *                  /|          *
- *                 / |          *
- *                y  |          *
- *                   z          *
- *******************************/
+/*********************************
+ *            ·------- x         *
+ *           /|                  *
+ *          / |                  *
+ *         y  |                  *
+ *            z                  *
+ *********************************/
 
 #ifndef DETECTOR_H
 #define DETECTOR_H
@@ -139,10 +139,10 @@ public:
    */
   std::pair<double, double> distributionOfReconstruction(
       const Particle    &particle,
-      const int          nReconstructions  = 10000,
+      const int          nReconstructions   = 10000,
       const bool         enableLinearMethod = false,
-      const bool         enablePlot        = true,
-      const std::string &fileName          = "test.png"
+      const bool         enablePlot         = true,
+      const std::string &fileName           = "test.png"
   ) const;
 
   /**

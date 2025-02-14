@@ -107,10 +107,13 @@ HitsData *Detector::particleHitData(
         constexpr double conversionFactor__MeV_c_e_T2cm =
             1e6 / TMath::C() * 1e2; // conversion factor from MeV / c / (e * T) to cm
         constexpr double conversionFactor__cm_ns2c = 1e9 / TMath::Ccgs(); // conversion factor from cm/ns to c
-        const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * abs(charge))
+        const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * charge)
                             * conversionFactor__MeV_c_e_T2cm;
 
-        ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
+        ROOT::Math::XYVector cyclotronDirection(
+            velocity0.Y(),
+            -velocity0.X()
+        ); // clockwise direction, from the center to the particle
         cyclotronDirection               = cyclotronDirection.Unit();
         const ROOT::Math::XYPoint center = position0 - radius * cyclotronDirection;
 
