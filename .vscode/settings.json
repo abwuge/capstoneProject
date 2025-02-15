@@ -1,6 +1,22 @@
 {
     "makefile.configureOnOpen": false,
-    "editor.formatOnSave": false,
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "github.copilot.chat.edits.codesearch.enabled": true,
+    "github.copilot.chat.commitMessageGeneration.instructions": [
+        {
+            "file": ".github/.copilot-commit-message-instructions.md"
+        }
+    ],
+    "github.copilot.chat.codeGeneration.instructions": [
+        {
+            "file": ".github/.copilot-codeGeneration-instructions.md"
+        }
+    ],
+    "chat.promptFiles": {
+        ".github/prompts": true
+    },
+    "github.copilot.chat.editor.temporalContext.enabled": true,
+    "github.copilot.chat.edits.temporalContext.enabled": true,
     "files.associations": {
         "allocator": "cpp",
         "array": "cpp",
