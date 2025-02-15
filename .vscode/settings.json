@@ -17,6 +17,7 @@
     },
     "github.copilot.chat.editor.temporalContext.enabled": true,
     "github.copilot.chat.edits.temporalContext.enabled": true,
+    "git.autofetch": true,
     "files.associations": {
         "allocator": "cpp",
         "array": "cpp",
