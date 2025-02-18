@@ -3,3 +3,4 @@ src/*
 !src/*.cpp
 bin/*
 test/*
+demand.md

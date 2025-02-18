@@ -223,7 +223,8 @@ int main(int argc, char *argv[]) {
 
   // TOF.plotReconstructDataUsingLinearMethod(proton, "test/plotReconstructDataUsingLinearMethod.png");
 
-  TOF.plotParticleTrajectory(proton, "test/plotParticleTrajectory.png");
+  std::vector<double> betas = {0.42, 0.7};
+  TOF.plotParticleTrajectory(betas, proton, "test/plotParticleTrajectory.png");
 
   if (false) {
     proton.setBeta(0.42);

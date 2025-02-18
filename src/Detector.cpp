@@ -113,8 +113,11 @@ HitsData *Detector::particleHitData(
         const double     radius = particle->getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * charge)
                             * conversionFactor__MeV_c_e_T2cm;
         ROOT::Math::XYVector cyclotronDirection(-velocity0.Y(), velocity0.X());
-        cyclotronDirection               = cyclotronDirection.Unit();
-        const ROOT::Math::XYPoint center = position0 + radius * cyclotronDirection; // radius * cyclotronDirection is the direction from the particle to the center
+        cyclotronDirection = cyclotronDirection.Unit();
+        const ROOT::Math::XYPoint center =
+            position0
+            + radius
+                  * cyclotronDirection; // radius * cyclotronDirection is the direction from the particle to the center
 
         const double theta0 = TMath::ATan2(position0.Y() - center.Y(), position0.X() - center.X());
         const double omega  = velocity0.R() / radius;
@@ -659,57 +662,82 @@ Detector::reconstructUsingNonLinearMethod(const Particle &particleOrignal, const
   return betaReciprocal;
 }
 
-void Detector::plotParticleTrajectory(Particle particle, const std::string &fileName) const {
+void Detector::plotParticleTrajectory(const std::vector<double> &betas, Particle particle, const std::string &fileName)
+    const {
   TCanvas *canvas = new TCanvas("Detector_plotParticleTrajectoryCanvas", "", 3508, 2480); // A4 size in pixels(300 dpi)
   canvas->Divide(2, 2);
 
-  const HitsData *hitsData = this->particleHitData(particle, true, false);
-  const int       nPoints  = hitsData->size();
-  if (nPoints < 2) {
-    if (Config::enableWarning) { printf("[Warning] Not enough points to plot trajectory (nPoints = %d)\n", nPoints); }
-    return;
+  std::vector<TMultiGraph *> multiGraphs = {
+      new TMultiGraph(), // XY
+      new TMultiGraph(), // YZ
+      new TMultiGraph(), // XZ
+  };
+  std::vector<TGraph2D *> graphs3D;
+
+  // Set titles
+  multiGraphs[0]->SetTitle("XY Plane View (Top);X [cm];Y [cm]");
+  multiGraphs[1]->SetTitle("YZ Plane View (Side);Z [cm];Y [cm]");
+  multiGraphs[2]->SetTitle("XZ Plane View (Front);Z [cm];X [cm]");
+
+  // Create legends
+  std::vector<TLegend *> legends(4);
+  for (int i = 0; i < 4; i++) {
+    legends[i] = new TLegend(0.18, 0.67, 0.38, 0.87);
+    legends[i]->SetBorderSize(kNone);
   }
 
-  TMultiGraph *multiGraphXY = new TMultiGraph();
-  TMultiGraph *multiGraphYZ = new TMultiGraph();
-  TMultiGraph *multiGraphXZ = new TMultiGraph();
+  // Colors for different betas
+  const std::vector<Color_t> colors    = {kBlue, kRed, kGreen + 2, kMagenta, kCyan + 2};
+  const int                  lineWidth = 2;
 
-  const int totalSamples = (nPoints - 1) * 100;
-  TGraph2D *graph3D      = new TGraph2D(totalSamples);
-  int       pointIndex   = 0;
+  for (size_t betaIndex = 0; betaIndex < betas.size(); betaIndex++) {
+    particle.setBeta(betas[betaIndex]);
+    const HitsData *hitsData = this->particleHitData(particle, true, false);
+    const int       nPoints  = hitsData->size();
 
-  for (int i = 0; i < nPoints - 1; ++i) {
-    const ROOT::Math::XYZPoint &pos1 = hitsData->at(i).hitPosition;
-    const ROOT::Math::XYZPoint &pos2 = hitsData->at(i + 1).hitPosition;
-
-    const double energyLoss = hitsData->at(i).hitEnergyLoss;
-    particle.setEnergy(particle.getEnergy() - energyLoss);
-    if (Config::enableDebug) {
-      printf("[Info] Energy loss at point %d: %f MeV, Remaining energy: %f MeV\n", i, energyLoss, particle.getEnergy());
+    if (nPoints < 2) {
+      if (Config::enableWarning) {
+        printf(
+            "[Warning] Not enough points to plot trajectory for beta=%f (nPoints = %d)\n",
+            betas[betaIndex],
+            nPoints
+        );
+      }
+      continue;
     }
 
-    const int nSamples = 100;
-    double   *xTrack   = new double[nSamples];
-    double   *yTrack   = new double[nSamples];
-    double   *zTrack   = new double[nSamples];
+    const int totalSamples = (nPoints - 1) * 100;
+    TGraph2D *graph3D      = new TGraph2D(totalSamples);
+    graphs3D.push_back(graph3D);
+    int pointIndex = 0;
 
-    constexpr double            conversionFactor__c2cm_ns = TMath::Ccgs() * 1e-9; // conversion factor from c to cm/ns
-    const ROOT::Math::XYZVector velocity                  = particle.getVelocity() * conversionFactor__c2cm_ns;
-    const int                   charge                    = particle.getCharge();
-    const bool                  hasMagneticField          = this->dB.R() >= 1e-10;
+    Particle particleTemp = particle;
 
-    if (!charge || !hasMagneticField) {
-      for (int j = 0; j < nSamples; ++j) {
-        const double t = j / (nSamples - 1.0);
-        xTrack[j]      = pos1.X() + (pos2.X() - pos1.X()) * t;
-        yTrack[j]      = pos1.Y() + (pos2.Y() - pos1.Y()) * t;
-        zTrack[j]      = pos1.Z() + (pos2.Z() - pos1.Z()) * t;
+    for (int i = 0; i < nPoints - 1; ++i) {
+      const ROOT::Math::XYZPoint &pos1       = hitsData->at(i).hitPosition;
+      const ROOT::Math::XYZPoint &pos2       = hitsData->at(i + 1).hitPosition;
+      const double                energyLoss = hitsData->at(i).hitEnergyLoss;
+      particleTemp.setEnergy(particleTemp.getEnergy() - energyLoss);
+
+      if (Config::enableDebug) {
+        printf(
+            "[Info] Beta=%f, Energy loss at point %d: %f MeV, Remaining energy: %f MeV\n",
+            betas[betaIndex],
+            i,
+            energyLoss,
+            particleTemp.getEnergy()
+        );
       }
-    } else {
-      const double B = this->dB.Y();
 
-      const ROOT::Math::XYVector velocity0(velocity.X(), velocity.Z());
-      if (velocity0.R() < 1e-10) {
+      const int           nSamples = 100;
+      std::vector<double> xTrack(nSamples), yTrack(nSamples), zTrack(nSamples);
+
+      constexpr double            conversionFactor__c2cm_ns = TMath::Ccgs() * 1e-9;
+      const ROOT::Math::XYZVector velocity                  = particleTemp.getVelocity() * conversionFactor__c2cm_ns;
+      const int                   charge                    = particleTemp.getCharge();
+      const bool                  hasMagneticField          = this->dB.R() >= 1e-10;
+
+      if (!charge || !hasMagneticField) {
         for (int j = 0; j < nSamples; ++j) {
           const double t = j / (nSamples - 1.0);
           xTrack[j]      = pos1.X() + (pos2.X() - pos1.X()) * t;
@@ -717,74 +745,97 @@ void Detector::plotParticleTrajectory(Particle particle, const std::string &file
           zTrack[j]      = pos1.Z() + (pos2.Z() - pos1.Z()) * t;
         }
       } else {
-        constexpr double conversionFactor__MeV_c_e_T2cm = 1e6 / TMath::C() * 1e2; // conversion factor from MeV/c to cm
-        constexpr double conversionFactor__cm_ns2c      = 1e9 / TMath::Ccgs();    // conversion factor from cm/ns to c
-        const double     radius = particle.getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * abs(charge))
-                            * conversionFactor__MeV_c_e_T2cm;
+        const double               B = this->dB.Y();
+        const ROOT::Math::XYVector velocity0(velocity.X(), velocity.Z());
+        if (velocity0.R() < 1e-10) {
+          for (int j = 0; j < nSamples; ++j) {
+            const double t = j / (nSamples - 1.0);
+            xTrack[j]      = pos1.X() + (pos2.X() - pos1.X()) * t;
+            yTrack[j]      = pos1.Y() + (pos2.Y() - pos1.Y()) * t;
+            zTrack[j]      = pos1.Z() + (pos2.Z() - pos1.Z()) * t;
+          }
+        } else {
+          constexpr double conversionFactor__MeV_c_e_T2cm = 1e6 / TMath::C() * 1e2;
+          constexpr double conversionFactor__cm_ns2c      = 1e9 / TMath::Ccgs();
+          const double radius = particleTemp.getMass() * (velocity0.R() * conversionFactor__cm_ns2c) / (B * abs(charge))
+                              * conversionFactor__MeV_c_e_T2cm;
+          ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
+          cyclotronDirection = cyclotronDirection.Unit();
+          const ROOT::Math::XYPoint center(
+              pos1.X() - radius * cyclotronDirection.X(),
+              pos1.Z() - radius * cyclotronDirection.Y()
+          );
+          const double theta0    = TMath::ATan2(pos1.Z() - center.Y(), pos1.X() - center.X());
+          const double omega     = velocity0.R() / radius;
+          const double deltaTime = (TMath::ASin((pos2.Z() - center.Y()) / radius) - theta0) / omega;
 
-        ROOT::Math::XYVector cyclotronDirection(velocity0.Y(), -velocity0.X());
-        cyclotronDirection = cyclotronDirection.Unit();
-        const ROOT::Math::XYPoint center(
-            pos1.X() - radius * cyclotronDirection.X(),
-            pos1.Z() - radius * cyclotronDirection.Y()
-        );
+          for (int j = 0; j < nSamples; ++j) {
+            const double t = j * deltaTime / (nSamples - 1.0);
+            xTrack[j]      = center.X() + radius * TMath::Cos(omega * t + theta0);
+            yTrack[j]      = pos1.Y() + velocity.Y() * t;
+            zTrack[j]      = center.Y() + radius * TMath::Sin(omega * t + theta0);
+          }
 
-        const double theta0    = TMath::ATan2(pos1.Z() - center.Y(), pos1.X() - center.X());
-        const double omega     = velocity0.R() / radius;
-        const double deltaTime = (TMath::ASin((pos2.Z() - center.Y()) / radius) - theta0) / omega;
-
-        for (int j = 0; j < nSamples; ++j) {
-          const double t = j * deltaTime / (nSamples - 1.0);
-          xTrack[j]      = center.X() + radius * TMath::Cos(omega * t + theta0);
-          yTrack[j]      = pos1.Y() + velocity.Y() * t;
-          zTrack[j]      = center.Y() + radius * TMath::Sin(omega * t + theta0);
+          const double velocityX = -radius * omega * TMath::Sin(omega * deltaTime + theta0);
+          const double velocityZ = radius * omega * TMath::Cos(omega * deltaTime + theta0);
+          particleTemp.setVelocity(
+              ROOT::Math::XYZVector(velocityX, velocity.Y(), velocityZ) / conversionFactor__c2cm_ns
+          );
         }
-
-        const double velocityX = -radius * omega * TMath::Sin(omega * deltaTime + theta0);
-        const double velocityZ = radius * omega * TMath::Cos(omega * deltaTime + theta0);
-        particle.setVelocity(ROOT::Math::XYZVector(velocityX, velocity.Y(), velocityZ) / conversionFactor__c2cm_ns);
       }
+
+      TGraph *segmentXY = new TGraph(nSamples, &xTrack[0], &yTrack[0]);
+      TGraph *segmentYZ = new TGraph(nSamples, &zTrack[0], &yTrack[0]);
+      TGraph *segmentXZ = new TGraph(nSamples, &zTrack[0], &xTrack[0]);
+
+      Color_t color = colors[betaIndex % colors.size()];
+      segmentXY->SetLineColor(color);
+      segmentYZ->SetLineColor(color);
+      segmentXZ->SetLineColor(color);
+
+      segmentXY->SetLineWidth(lineWidth);
+      segmentYZ->SetLineWidth(lineWidth);
+      segmentXZ->SetLineWidth(lineWidth);
+
+      multiGraphs[0]->Add(segmentXY);
+      multiGraphs[1]->Add(segmentYZ);
+      multiGraphs[2]->Add(segmentXZ);
+
+      for (int j = 0; j < nSamples; ++j) { graph3D->SetPoint(pointIndex++, xTrack[j], yTrack[j], zTrack[j]); }
     }
 
-    TGraph *segmentXY = new TGraph(nSamples, xTrack, yTrack);
-    TGraph *segmentYZ = new TGraph(nSamples, zTrack, yTrack);
-    TGraph *segmentXZ = new TGraph(nSamples, zTrack, xTrack);
+    graph3D->SetLineColor(colors[betaIndex % colors.size()]);
+    graph3D->SetLineWidth(lineWidth);
 
-    segmentXY->SetLineColor(kBlue);
-    segmentYZ->SetLineColor(kBlue);
-    segmentXZ->SetLineColor(kBlue);
+    // Add to legends with proper style
+    TLine *legendLine = new TLine();
+    legendLine->SetLineColor(colors[betaIndex % colors.size()]);
+    legendLine->SetLineWidth(lineWidth);
 
-    multiGraphXY->Add(segmentXY);
-    multiGraphYZ->Add(segmentYZ);
-    multiGraphXZ->Add(segmentXZ);
-
-    for (int j = 0; j < nSamples; ++j) { graph3D->SetPoint(pointIndex++, xTrack[j], yTrack[j], zTrack[j]); }
-
-    delete[] xTrack;
-    delete[] yTrack;
-    delete[] zTrack;
+    for (int i = 0; i < 4; i++) { legends[i]->AddEntry(legendLine, Form("#beta = %.2f", betas[betaIndex]), "l"); }
   }
 
-  canvas->cd(1);
-  multiGraphXY->SetTitle("XY Plane View (Top);X [cm];Y [cm]");
-  multiGraphXY->Draw("AL");
-  gPad->SetGrid();
+  // Draw everything
+  for (int i = 0; i < 3; i++) {
+    canvas->cd(i + 1);
+    multiGraphs[i]->Draw("AL");
+    legends[i]->Draw();
+    gPad->SetGrid();
+  }
 
-  canvas->cd(2);
-  multiGraphYZ->SetTitle("YZ Plane View (Side);Z [cm];Y [cm]");
-  multiGraphYZ->Draw("AL");
-  gPad->SetGrid();
-
-  canvas->cd(3);
-  multiGraphXZ->SetTitle("XZ Plane View (Front);Z [cm];X [cm]");
-  multiGraphXZ->Draw("AL");
-  gPad->SetGrid();
-
+  // Draw 3D view with improved settings
   canvas->cd(4);
-  graph3D->SetTitle("3D View;X [cm];Y [cm];Z [cm]");
-  graph3D->SetLineColor(kBlue);
-  graph3D->SetLineWidth(2);
-  graph3D->Draw("LINE");
+  bool first = true;
+  for (auto graph : graphs3D) {
+    if (first) {
+      graph->SetTitle("3D View;X [cm];Y [cm];Z [cm]");
+      graph->Draw("LINE");
+      first = false;
+    } else {
+      graph->Draw("LINE SAME");
+    }
+  }
+  legends[3]->Draw();
 
   gPad->SetTheta(30);
   gPad->SetPhi(30);
@@ -792,9 +843,9 @@ void Detector::plotParticleTrajectory(Particle particle, const std::string &file
 
   canvas->SaveAs(fileName.c_str());
 
-  delete multiGraphXY;
-  delete multiGraphYZ;
-  delete multiGraphXZ;
-  delete graph3D;
+  // Cleanup
+  for (auto mg : multiGraphs) delete mg;
+  for (auto g : graphs3D) delete g;
+  for (auto l : legends) delete l;
   delete canvas;
 }

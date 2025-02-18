@@ -186,7 +186,10 @@ public:
    * @param particle Incident particle
    * @param fileName Name of the file to save the plot
    */
-  void plotParticleTrajectory(Particle particle, const std::string &fileName = "test.png") const;
+  void plotParticleTrajectory(const std::vector<double>& betas, Particle particle, const std::string &fileName = "test.png") const;
+  void plotParticleTrajectory(Particle particle, const std::string &fileName = "test.png") const {
+    plotParticleTrajectory({particle.getBeta()}, particle, fileName);
+  }
 
   /* END Methods */
 
