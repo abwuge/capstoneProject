@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
   constexpr double mass0Proton =
       1.67262192595e-27 * kg;        // Rest mass of proton in MeV/c^2
                                      //(from https://physics.nist.gov/cgi-bin/cuu/Value?mp|search_for=proton+mass)
-  constexpr double            startBetaProton = 0.42;                   // Initial beta of proton
+  constexpr double            startBetaProton = 0.7;                   // Initial beta of proton
   const ROOT::Math::XYZPoint  startPositionProton(0, 0, TOF.getMinZ()); // Initial position of proton in cm
   const ROOT::Math::XYZVector directionProton(1, 1, 1);                 // Direction of proton
 
@@ -221,12 +221,12 @@ int main(int argc, char *argv[]) {
 
   // TOF.plotDeltaTime(Li6, "test/plotDeltaTime.png");
 
-  TOF.plotReconstructDataUsingLinearMethod(proton, "test/plotReconstructDataUsingLinearMethod.png");
+  // TOF.plotReconstructDataUsingLinearMethod(proton, "test/plotReconstructDataUsingLinearMethod.png");
 
   TOF.plotParticleTrajectory(proton, "test/plotParticleTrajectory.png");
 
   if (false) {
-    proton.setBeta(0.4);
+    proton.setBeta(0.42);
     TOF.distributionOfReconstruction(proton, 10000, true, true, "test/distributionOfReconstruction_linearMethod.png");
 
     TOF.distributionOfReconstruction(

@@ -60,7 +60,7 @@ HitsData *Detector::particleHitData(
 
     auto linearPropagate = [&]() -> bool {
       if (velocity.Z() <= 0) {
-        if (Config::enableWarningAtDebug)
+        if (Config::enableWarning)
           printf(
               "[Warning] Cannot hit any more scintillator counters! The velocity in the z-direction is zero or "
               "negative!\n"
